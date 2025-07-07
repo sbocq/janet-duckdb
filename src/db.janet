@@ -46,6 +46,7 @@
 #==------------------------------------------------------------------------==#
 # Database Management Functions
 #==------------------------------------------------------------------------==#
+(defn dbg [x] (pp [x (type x)]) x)
 
 (defn open "Open a DuckDB database. Accepts an optional `path` and `config` map e.g.  {:access_mode
   :READ_ONLY}. Deafults to \":memory:\" id path is not sepcified. The caller is responsible to use
@@ -55,11 +56,11 @@
   (default path ":memory:")
   (default config-map {})
 
-  (def config-ptr (ffi/write :ptr nil))
+  (def config-ptr (ffi/write ffi/duckdb_config [nil]))
   (when (= (ffi/duckdb_create_config config-ptr) ffi/DuckDBError)
     (error "Failed to allocate fresh duckdb config"))
 
-  (def db-ptr (ffi/write :ptr nil))
+  (def db-ptr (ffi/write ffi/duckdb_database [nil]))
   (defer (ffi/duckdb_destroy_config config-ptr)
     (def duckdb-config (ffi/read ffi/duckdb_config config-ptr))
 
@@ -70,7 +71,7 @@
     (def err-ptr (ffi/write :ptr nil))
 
     (edefer (ffi/duckdb_free err-ptr)
-      (when (= (ffi/duckdb_open-ext path db-ptr duckdb-config err-ptr) ffi/DuckDBError)
+      (when (= (ffi/duckdb_open_ext path db-ptr duckdb-config err-ptr) ffi/DuckDBError)
         (error (ffi/read :string err-ptr)))))
 
   {:ptr db-ptr

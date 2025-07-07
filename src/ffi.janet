@@ -401,7 +401,7 @@
 
 # Database management functions
 (ffi/defbind duckdb_open :int [path :string out-database :ptr])
-(ffi/defbind duckdb_open-ext :int [path :string out-database :ptr config duckdb_config out-error :ptr])
+(ffi/defbind duckdb_open_ext :int [path :string out-database :ptr config duckdb_config out-error :ptr])
 (ffi/defbind duckdb_close :void [database :ptr])
 
 # Connection management functions
