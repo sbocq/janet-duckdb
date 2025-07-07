@@ -187,14 +187,6 @@
 
   {:type-key type-key :ffi-data-type ffi-data-type :janet-from-value janet-from-value})
 
-# Missing from FFI module?
-(defn- deref-c-string-ptr [string-ptr]
-  # In `(ffi/defbind duckdb_enum_dictionary_value :ptr [type duckdb_logical_type index idx_t])`, the
-  # Janet FFI layer reads `char *` as a :ptr object e.g. `(:pointer <pointer 0x0000040D4770>)`.  We
-  # must write back the pointer object as "buffer pointer" e.g. `(:buffer @"pG\r\x04\0\0\0\0")`,
-  # which can then safely be read back as a string.
-  (ffi/read :string (ffi/write :ptr string-ptr)))
-
 (defn logical-type-spec [logical-type]
 
   (def type-id (ffi/duckdb_get_type_id logical-type))
@@ -216,7 +208,7 @@
         (for i 0 enum-size
           (def enum-val-ptr (ffi/duckdb_enum_dictionary_value logical-type i))
           (defer (ffi/duckdb_free enum-val-ptr)
-            (put dict i (deref-c-string-ptr enum-val-ptr))))
+            (put dict i (ffi/deref-c-string-ptr enum-val-ptr))))
         [type-key {:members (tuple/slice (values dict))}])
         
       ffi/DUCKDB_TYPE_LIST
@@ -232,7 +224,7 @@
         (for i 0 struct-size
           (def struct-name-ptr (ffi/duckdb_struct_type_child_name logical-type i))
           (defer (ffi/duckdb_free struct-name-ptr)
-            (put struct-keys i (deref-c-string-ptr struct-name-ptr)))
+            (put struct-keys i (ffi/deref-c-string-ptr struct-name-ptr)))
           (def child-type (ffi/duckdb_struct_type_child_type logical-type i))
           (defer (ffi/duckdb_destroy_logical_type (ffi/write ffi/duckdb_logical_type child-type))
             (put struct-types i (logical-type-spec child-type))))
@@ -259,7 +251,7 @@
         (for i 0 union-size
           (def union-name-ptr (ffi/duckdb_union_type_member_name logical-type i))
           (defer (ffi/duckdb_free union-name-ptr)
-            (put union-tags i (keyword (deref-c-string-ptr union-name-ptr))))
+            (put union-tags i (keyword (ffi/deref-c-string-ptr union-name-ptr))))
           (def child-type (ffi/duckdb_union_type_member_type logical-type i))
           (defer (ffi/duckdb_destroy_logical_type (ffi/write ffi/duckdb_logical_type child-type))
             (put union-types i (logical-type-spec child-type))))
@@ -334,7 +326,7 @@
           (for i 0 enum-size
             (def enum-val-ptr (ffi/duckdb_enum_dictionary_value logical-type i))
             (defer (ffi/duckdb_free enum-val-ptr)
-              (put dict i (deref-c-string-ptr enum-val-ptr))))
+              (put dict i (ffi/deref-c-string-ptr enum-val-ptr))))
           (janet-array-from-data data-ptr
                                  validity-mask
                                  (type-spec :ffi-data-type)
@@ -362,7 +354,7 @@
           (for i 0 struct-size
             (def struct-name-ptr (ffi/duckdb_struct_type_child_name logical-type i))
             (defer (ffi/duckdb_free struct-name-ptr)
-              (put struct-keys i (keyword (deref-c-string-ptr struct-name-ptr))))
+              (put struct-keys i (keyword (ffi/deref-c-string-ptr struct-name-ptr))))
             (put struct-vals i (janet-array-from-vector
                                  (ffi/duckdb_struct_vector_get_child duckdb-vector i)
                                  offset
@@ -409,7 +401,7 @@
           (for i 0 struct-size
             (def struct-name-ptr (ffi/duckdb_struct_type_child_name logical-type i))
             (defer (ffi/duckdb_free struct-name-ptr)
-              (put struct-keys i (keyword (deref-c-string-ptr struct-name-ptr))))
+              (put struct-keys i (keyword (ffi/deref-c-string-ptr struct-name-ptr))))
             (put struct-vals i (janet-array-from-vector
                                  (ffi/duckdb_struct_vector_get_child duckdb-vector i)
                                  offset
@@ -423,7 +415,7 @@
           (for i 0 union-count
             (def union-tag-ptr (ffi/duckdb_union_type_member_name logical-type i))
             (defer (ffi/duckdb_free union-tag-ptr)
-              (let [tag-key (keyword (deref-c-string-ptr union-tag-ptr))]
+              (let [tag-key (keyword (ffi/deref-c-string-ptr union-tag-ptr))]
                 (put tag-id-to-key i tag-key)
                 (put tag-key-to-id tag-key i))))
           # map a tag-id to the index of a struct column

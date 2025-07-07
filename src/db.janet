@@ -16,15 +16,16 @@
 #==------------------------------------------------------------------------==#
 # Configuration Functions
 #==------------------------------------------------------------------------==#
+(defn dbg [x] (pp [x (type x)]) x)
 
 (defn config-flags-table
   "Get a table of all available configuration flags and their descriptions"
   []
-  (let [out-name (ffi/write :ptr nil)
-        out-description (ffi/write :ptr nil)]
+  (let [name-ptr (ffi/write :string "")
+        description-ptr (ffi/write :string "")]
     (-> (seq [i :range [0 (int/to-number (ffi/duckdb_config_count))]]
-          (ffi/duckdb_get_config_flag i out-name out-description)
-          [(ffi/read :string out-name) (ffi/read :string out-description)])
+          (ffi/duckdb_get_config_flag i name-ptr description-ptr)
+          [(ffi/read :string name-ptr) (ffi/read :string description-ptr)])
         (from-pairs))))
 
 (comment
@@ -46,7 +47,6 @@
 #==------------------------------------------------------------------------==#
 # Database Management Functions
 #==------------------------------------------------------------------------==#
-(defn dbg [x] (pp [x (type x)]) x)
 
 (defn open "Open a DuckDB database. Accepts an optional `path` and `config` map e.g.  {:access_mode
   :READ_ONLY}. Deafults to \":memory:\" id path is not sepcified. The caller is responsible to use
@@ -56,39 +56,39 @@
   (default path ":memory:")
   (default config-map {})
 
-  (def config-ptr (ffi/write ffi/duckdb_config [nil]))
-  (when (= (ffi/duckdb_create_config config-ptr) ffi/DuckDBError)
+  (def config-ptr-ptr (ffi/write :ptr (ffi/write ffi/duckdb_config [nil])))
+  (when (= (ffi/duckdb_create_config config-ptr-ptr) ffi/DuckDBError)
     (error "Failed to allocate fresh duckdb config"))
 
-  (def db-ptr (ffi/write ffi/duckdb_database [nil]))
-  (defer (ffi/duckdb_destroy_config config-ptr)
-    (def duckdb-config (ffi/read ffi/duckdb_config config-ptr))
+  (def db-ptr-ptr (ffi/write :ptr (ffi/write ffi/duckdb_database [nil])))
+  (defer (ffi/duckdb_destroy_config config-ptr-ptr)
+    (def duckdb-config (ffi/read ffi/duckdb_config config-ptr-ptr))
 
     (eachp [k v] config-map
       (when (= (ffi/duckdb_set_config duckdb-config (string k) (string v)) ffi/DuckDBError)
         (error (string/format "Cannot set option %q=%q" k v))))
 
-    (def err-ptr (ffi/write :ptr nil))
+    (def err-ptr (ffi/write :string ""))
 
     (edefer (ffi/duckdb_free err-ptr)
-      (when (= (ffi/duckdb_open_ext path db-ptr duckdb-config err-ptr) ffi/DuckDBError)
+      (when (= (ffi/duckdb_open_ext path db-ptr-ptr duckdb-config err-ptr) ffi/DuckDBError)
         (error (ffi/read :string err-ptr)))))
 
-  {:ptr db-ptr
-   :struct (ffi/read ffi/duckdb_database db-ptr)
-   :close (fn [self] (ffi/duckdb_close (self :ptr)))})
+  {:ptr-ptr db-ptr-ptr
+   :struct (ffi/read ffi/duckdb_database (ffi/read :ptr db-ptr-ptr))
+   :close (fn [self] (ffi/duckdb_close (self :ptr-ptr)))})
 
 (defn connect
   "Create a connection to a database.Caller is responsible to use :close method to disconnect"
   [database]
 
-  (def conn-ptr (ffi/write :ptr nil))
-  (when (= (ffi/duckdb_connect (database :struct) conn-ptr) ffi/DuckDBError)
+  (def conn-ptr-ptr (ffi/write :ptr (ffi/write ffi/duckdb_connection [nil])))
+  (when (= (ffi/duckdb_connect (database :struct) conn-ptr-ptr) ffi/DuckDBError)
     (error "Failed to create connection to DuckDB database"))
 
-  {:ptr conn-ptr
-   :struct (ffi/read ffi/duckdb_connection conn-ptr)
-   :close (fn [self] (ffi/duckdb_disconnect (self :ptr)))})
+  {:ptr-ptr conn-ptr-ptr
+   :struct (ffi/read ffi/duckdb_connection (ffi/read :ptr conn-ptr-ptr))
+   :close (fn [self] (ffi/duckdb_disconnect (self :ptr-ptr)))})
 
 #==------------------------------------------------------------------------==#
 # Query Execution Functions

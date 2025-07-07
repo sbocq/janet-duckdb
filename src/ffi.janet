@@ -15,7 +15,7 @@
 (ffi/context "libduckdb.so" :lazy true)
 
 #==------------------------------------------------------------------------==#
-# FFI Helper Macros
+# FFI Helpers
 #==------------------------------------------------------------------------==#
 
 (defmacro defcstruct
@@ -38,6 +38,11 @@
            (array/push val-to-enum-sym [val name])
            ~(def ,name ,val))
        (def ,to-key-sym (struct ,;(mapcat (fn [[k v]] [k (keyword v)]) val-to-enum-sym))))))
+
+(defn deref-c-string-ptr [char-ptr]
+  #(ffi/read :string ...) expects a char** as argument (i.e. a pointer to a char-ptr)
+  #so we use (ffi/write :ptr char-ptr) to get the pointer to the char-ptr, that is the char **!
+  (ffi/read :string (ffi/write :ptr char-ptr)))
 
 #==------------------------------------------------------------------------==#
 # Enums
