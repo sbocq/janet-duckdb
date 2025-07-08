@@ -12,7 +12,12 @@
 
 
 (use judge)
-(ffi/context "libduckdb.so" :lazy true)
+
+(ffi/context (case (os/which)
+               :linux "libduckdb.so"
+               :macos "libduckdb.dylib"
+               "libduckdb.so")
+             :lazy true)
 
 #==------------------------------------------------------------------------==#
 # FFI Helpers
