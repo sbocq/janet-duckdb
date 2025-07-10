@@ -1,5 +1,5 @@
 # DuckDB type conversion utilities
-(import ./ffi :as ffi)
+(import ./ffi)
 (use judge)
 
 (defn dbg [x] (pp [x (type x)]) x)

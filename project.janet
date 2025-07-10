@@ -1,5 +1,5 @@
 (declare-project
-  :name "duckdb"
+  :name "janet-duckdb"
   :description "A Janet library for DuckDB, an in-process SQL OLAP database management system"
   :version "0.1.0"
   :author "Sébastien Bocq"
@@ -10,7 +10,9 @@
                   :tag "v2.9.0"}])
 
 (declare-source
+  :prefix "janet-duckdb"
   :source
-  ["src/ffi"
-   "src/db"
-   "src/types"])
+  ["src/db.janet"
+   "src/ffi.janet"
+   "src/result.janet"
+   "src/types.janet"])
