@@ -8,15 +8,14 @@
 # Basic Type Conversions
 #==------------------------------------------------------------------------==#
 
-(defn janet-bytes-from-string
+(defn- janet-bytes-from-string
   "Convert a duckdb string to a byte buffer."
   [duckdb-string]
   (def [[len data]] duckdb-string)
 
-  (ffi/read @[:char len]
-            (if (<= len 12)
-              (ffi/write @[:char 12] data)
-              (ffi/duckdb_string_t_data (ffi/write ffi/duckdb_string_t duckdb-string)))))
+  (if (<= len 12)
+    (tuple/slice data 0 len)
+    (ffi/read @[:char len] (ffi/duckdb_string_t_data (ffi/write ffi/duckdb_string_t duckdb-string)))))
 
 (defn janet-from-string
   "Convert a duckdb string to a Janet string"
