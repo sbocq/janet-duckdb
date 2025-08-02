@@ -51,7 +51,7 @@ jpm -l deps
 Assuming you've added `janet-duckdb` as a dependency and run `jpm -l deps`:
 
 ```janet
-(import janet-duckdb/db :as db)
+(import duckdb/db :as db)
 
 (with [db (db/open)]
   (pp (db/library-version)))
