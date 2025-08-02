@@ -53,6 +53,7 @@
           CREATE TABLE types_test (
               id INTEGER,
               name VARCHAR,
+              site_admin BOOL,
               value DOUBLE,
               int32 INTEGER,
               int64 BIGINT,
@@ -68,11 +69,12 @@
        :column-types [:bigint]})
     )
 
+  # Test inlined (<= 12 bytes) and non inlined strings.
   (with [result (db/query conn `
           INSERT INTO types_test
-          VALUES (1, 'Item 1', 10.5, 2, 6876786, 32.1),
-                 (2, 'Item 2', 20.75, 3, 69870870970909, 2.32),
-                 (3, 'Item 3', 30.25, 4, 716988600123456789, -3.1)
+          VALUES (1, 'Organizatio', true, 10.5, 2, 6876786, 32.1),
+                 (2, 'Organization', false, 20.75, 3, 69870870970909, 2.32),
+                 (3, 'Organizatione', true, 30.25, 4, 716988600123456789, -3.1)
         `)]
     (test (result/rows-changed result) 3)
     (test (result/describe-columns result :logical-type true)
@@ -86,15 +88,17 @@
     (test (result/return-type result) :DUCKDB_RESULT_TYPE_QUERY_RESULT)
     (test (result/rows-changed result) 0)
     (test (result/describe-columns result :logical-type true)
-      {:column-count 6
+      {:column-count 7
        :column-names ["id"
                       "name"
+                      "site_admin"
                       "value"
                       "int32"
                       "int64"
                       "decimal"]
        :column-types [:int
                       :varchar
+                      :bool
                       :double
                       :int
                       :bigint
@@ -102,21 +106,26 @@
     (let [columns (result/fetch-columns result)]
       (test columns
         {:column @column-from-name
-         :column-count 6
+         :column-count 7
          :column-names ["id"
                         "name"
+                        "site_admin"
                         "value"
                         "int32"
                         "int64"
                         "decimal"]
          :column-types [:int
                         :varchar
+                        :bool
                         :double
                         :int
                         :bigint
                         :decimal]
          :columns @[@[1 2 3]
-                    @["Item 1" "Item 2" "Item 3"]
+                    @["Organizatio"
+                      "Organization"
+                      "Organizatione"]
+                    @[true false true]
                     @[10.5 20.75 30.25]
                     @[2 3 4]
                     @[6876786
@@ -129,58 +138,85 @@
            :id 1
            :int32 2
            :int64 6876786
-           :name "Item 1"
+           :name "Organizatio"
+           :site_admin true
            :value 10.5}
           {:decimal 2.32
            :id 2
            :int32 3
            :int64 69870870970909
-           :name "Item 2"
+           :name "Organization"
+           :site_admin false
            :value 20.75}
           {:decimal -3.1
            :id 3
            :int32 4
            :int64 "716988600123456789"
-           :name "Item 3"
+           :name "Organizatione"
+           :site_admin true
            :value 30.25}])
       (test (result/columns-to-rows columns :coll-type :table)
         @[@{:decimal 32.1
             :id 1
             :int32 2
             :int64 6876786
-            :name "Item 1"
+            :name "Organizatio"
+            :site_admin true
             :value 10.5}
           @{:decimal 2.32
             :id 2
             :int32 3
             :int64 69870870970909
-            :name "Item 2"
+            :name "Organization"
+            :site_admin false
             :value 20.75}
           @{:decimal -3.1
             :id 3
             :int32 4
             :int64 "716988600123456789"
-            :name "Item 3"
+            :name "Organizatione"
+            :site_admin true
             :value 30.25}])
       (test (result/columns-to-rows columns :coll-type :tuple)
-        @[[1 "Item 1" 10.5 2 6876786 32.1]
-          [2 "Item 2" 20.75 3 69870870970909 2.32]
+        @[[1
+           "Organizatio"
+           true
+           10.5
+           2
+           6876786
+           32.1]
+          [2
+           "Organization"
+           false
+           20.75
+           3
+           69870870970909
+           2.32]
           [3
-           "Item 3"
+           "Organizatione"
+           true
            30.25
            4
            "716988600123456789"
            -3.1]])
       (test (result/columns-to-rows columns :coll-type :array)
-        @[@[1 "Item 1" 10.5 2 6876786 32.1]
+        @[@[1
+            "Organizatio"
+            true
+            10.5
+            2
+            6876786
+            32.1]
           @[2
-            "Item 2"
+            "Organization"
+            false
             20.75
             3
             69870870970909
             2.32]
           @[3
-            "Item 3"
+            "Organizatione"
+            true
             30.25
             4
             "716988600123456789"
@@ -196,21 +232,26 @@
       (test r
         @[{:chunk-offset 0
            :column @column-from-name
-           :column-count 6
+           :column-count 7
            :column-names ["id"
                           "name"
+                          "site_admin"
                           "value"
                           "int32"
                           "int64"
                           "decimal"]
            :column-types [:int
                           :varchar
+                          :bool
                           :double
                           :int
                           :bigint
                           :decimal]
            :columns @[@[1 2 3]
-                      @["Item 1" "Item 2" "Item 3"]
+                      @["Organizatio"
+                        "Organization"
+                        "Organizatione"]
+                      @[true false true]
                       @[10.5 20.75 30.25]
                       @[2 3 4]
                       @[6876786
@@ -224,19 +265,22 @@
            :id 1
            :int32 2
            :int64 6876786
-           :name "Item 1"
+           :name "Organizatio"
+           :site_admin true
            :value 10.5}
           {:decimal 2.32
            :id 2
            :int32 3
            :int64 69870870970909
-           :name "Item 2"
+           :name "Organization"
+           :site_admin false
            :value 20.75}
           {:decimal -3.1
            :id 3
            :int32 4
            :int64 "716988600123456789"
-           :name "Item 3"
+           :name "Organizatione"
+           :site_admin true
            :value 30.25}]))
     )
   )
@@ -266,9 +310,7 @@
                         "'\\xAA\\xAB\\xAC'::BLOB"
                         "'AB'::BLOB"]
          :column-types [:blob :blob :blob]
-         :columns @[@[@[-86]]
-                    @[@[-86 -85 -84]]
-                    @[@[65 66]]]
+         :columns @[@[[-86]] @[[-86 -85 -84]] @[[65 66]]]
          :row-count 1})
       ))
   )

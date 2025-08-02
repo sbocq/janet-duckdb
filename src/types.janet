@@ -8,19 +8,25 @@
 # Basic Type Conversions
 #==------------------------------------------------------------------------==#
 
-(defn janet-bytes-from-duckdb-string [duckdb-string]
-  (def len (ffi/duckdb_string_t_length duckdb-string))
-  (ffi/read @[:char len] (ffi/duckdb_string_t_data (ffi/write ffi/duckdb_string_t duckdb-string))))
+(defn janet-bytes-from-string
+  "Convert a duckdb string to a byte buffer."
+  [duckdb-string]
+  (def [[len data]] duckdb-string)
+
+  (ffi/read @[:char len]
+            (if (<= len 12)
+              (ffi/write @[:char 12] data)
+              (ffi/duckdb_string_t_data (ffi/write ffi/duckdb_string_t duckdb-string)))))
 
 (defn janet-from-string
-  "Convert a DuckDB string to a Janet string"
+  "Convert a duckdb string to a Janet string"
   [duckdb-string]
-  (string/from-bytes ;(janet-bytes-from-duckdb-string duckdb-string)))
+  (string/from-bytes ;(janet-bytes-from-string duckdb-string)))
 
 (defn janet-from-blob
-    "Convert a Janet buffer to a DuckDB blob. The blob data must be freed using duckdb_free"
+  "Convert a duckdb string to a Janet string"
   [duckdb-string]
-  (janet-bytes-from-duckdb-string duckdb-string))
+  (tuple/slice (janet-bytes-from-string duckdb-string)))
 
 (def n64-min (int/s64 math/int-min))
 (def n64-max (int/s64 math/int-max))
@@ -134,7 +140,7 @@
 #==------------------------------------------------------------------------==#
 
 (defn janet-from-decimal
-    "Convert a DuckDB decimal to a Janet number"
+  "Convert a DuckDB decimal to a Janet number"
   [duckdb-decimal]
   (ffi/duckdb_decimal_to_double duckdb-decimal))
 

@@ -98,156 +98,156 @@
 
       (let [columns (result/fetch-columns result)]
         (test columns
-              {:column @column-from-name
-               :column-count 19
-               :column-names ["id"
-                              "name"
-                              "float"
-                              "double"
-                              "int32"
-                              "int64"
-                              "decimal"
-                              "blob"
-                              "date"
-                              "time"
-                              "timestamp"
-                              "interval"
-                              "list"
-                              "arr"
-                              "struct"
-                              "array_of_struct"
-                              "map"
-                              "enum"
-                              "u"]
-               :column-types [:int
-                              :varchar
-                              :float
-                              :double
-                              :int
-                              :bigint
-                              :decimal
-                              :blob
-                              :date
-                              :time
-                              :timestamp_s
-                              :interval
-                              :list
-                              :array
-                              :struct
-                              :array
-                              :map
-                              :enum
-                              :union]
-               :columns @[@[1 2 3]
-                          @["Item 1" "Item 2" "Item 3"]
-                          @[10.5 20.75 30.25]
-                          @[0.33333 0.6786788 0.679698]
-                          @[2 3 4]
-                          @[6876786
-                            69870870970909
-                            "716988600123456789"]
-                          @[32.1 2.32 -3.1]
-                          @[[170] [170 171 172] [65 66]]
-                          @[{:month 2 :month-day 24 :year 2003}
-                            {:month 5 :month-day 23 :year -5877641}
-                            {:month 6 :month-day 10 :year 5881580}]
-                          @[{:hours 11
-                             :micros 123456
-                             :minutes 30
-                             :seconds 0}
-                            {:hours 11
-                             :micros 123456
-                             :minutes 31
-                             :seconds 0}
-                            {:hours 11
-                             :micros 123456
-                             :minutes 33
-                             :seconds 0}]
-                          @[716988600 716988660 716988840]
-                          @[{:days 0 :micros 0 :months 12}
-                            {:days 1 :micros 0 :months 1}
-                            {:days 0 :micros 172800000000 :months 0}]
-                          @[@[42 nil 83] @[1] @[8 9]]
-                          @[[1 2 3] [4 5 nil] [7 8 9]]
-                          @[{:col1 1 :col2 "ha"}
-                            {:col1 2 :col2 "ho"}
-                            {:col2 "oops"}]
-                          @[[{:col1 1 :col2 "ha"}
-                             {:col1 10 :col2 "he"}]
-                            [{:col1 2 :col2 "ho"} nil]
-                            [{:col2 "oops"} {:col1 30}]]
-                          @[@{3 -32.1} nil @{1 42.001 5 -32.1}]
-                          @["happy" "sad" "ok"]
-                          @[[:num 1] [:num 2] [:str "three"]]]
-               :row-count 3})
+          {:column @column-from-name
+           :column-count 19
+           :column-names ["id"
+                          "name"
+                          "float"
+                          "double"
+                          "int32"
+                          "int64"
+                          "decimal"
+                          "blob"
+                          "date"
+                          "time"
+                          "timestamp"
+                          "interval"
+                          "list"
+                          "arr"
+                          "struct"
+                          "array_of_struct"
+                          "map"
+                          "enum"
+                          "u"]
+           :column-types [:int
+                          :varchar
+                          :float
+                          :double
+                          :int
+                          :bigint
+                          :decimal
+                          :blob
+                          :date
+                          :time
+                          :timestamp_s
+                          :interval
+                          :list
+                          :array
+                          :struct
+                          :array
+                          :map
+                          :enum
+                          :union]
+           :columns @[@[1 2 3]
+                      @["Item 1" "Item 2" "Item 3"]
+                      @[10.5 20.75 30.25]
+                      @[0.33333 0.6786788 0.679698]
+                      @[2 3 4]
+                      @[6876786
+                        69870870970909
+                        "716988600123456789"]
+                      @[32.1 2.32 -3.1]
+                      @[[-86] [-86 -85 -84] [65 66]]
+                      @[{:month 2 :month-day 24 :year 2003}
+                        {:month 5 :month-day 23 :year -5877641}
+                        {:month 6 :month-day 10 :year 5881580}]
+                      @[{:hours 11
+                         :micros 123456
+                         :minutes 30
+                         :seconds 0}
+                        {:hours 11
+                         :micros 123456
+                         :minutes 31
+                         :seconds 0}
+                        {:hours 11
+                         :micros 123456
+                         :minutes 33
+                         :seconds 0}]
+                      @[716988600 716988660 716988840]
+                      @[{:days 0 :micros 0 :months 12}
+                        {:days 1 :micros 0 :months 1}
+                        {:days 0 :micros 172800000000 :months 0}]
+                      @[@[42 nil 83] @[1] @[8 9]]
+                      @[[1 2 3] [4 5 nil] [7 8 9]]
+                      @[{:col1 1 :col2 "ha"}
+                        {:col1 2 :col2 "ho"}
+                        {:col2 "oops"}]
+                      @[[{:col1 1 :col2 "ha"}
+                         {:col1 10 :col2 "he"}]
+                        [{:col1 2 :col2 "ho"} nil]
+                        [{:col2 "oops"} {:col1 30}]]
+                      @[@{3 -32.1} nil @{1 42.001 5 -32.1}]
+                      @["happy" "sad" "ok"]
+                      @[[:num 1] [:num 2] [:str "three"]]]
+           :row-count 3})
 
         (test (result/columns-to-rows columns)
-              @[{:arr [1 2 3]
-                 :array_of_struct [{:col1 1 :col2 "ha"}
-                                   {:col1 10 :col2 "he"}]
-                 :blob [170]
-                 :date {:month 2 :month-day 24 :year 2003}
-                 :decimal 32.1
-                 :double 0.33333
-                 :enum "happy"
-                 :float 10.5
-                 :id 1
-                 :int32 2
-                 :int64 6876786
-                 :interval {:days 0 :micros 0 :months 12}
-                 :list @[42 nil 83]
-                 :map @{3 -32.1}
-                 :name "Item 1"
-                 :struct {:col1 1 :col2 "ha"}
-                 :time {:hours 11
-                        :micros 123456
-                        :minutes 30
-                        :seconds 0}
-                 :timestamp 716988600
-                 :u [:num 1]}
-                {:arr [4 5 nil]
-                 :array_of_struct [{:col1 2 :col2 "ho"} nil]
-                 :blob [170 171 172]
-                 :date {:month 5 :month-day 23 :year -5877641}
-                 :decimal 2.32
-                 :double 0.6786788
-                 :enum "sad"
-                 :float 20.75
-                 :id 2
-                 :int32 3
-                 :int64 69870870970909
-                 :interval {:days 1 :micros 0 :months 1}
-                 :list @[1]
-                 :name "Item 2"
-                 :struct {:col1 2 :col2 "ho"}
-                 :time {:hours 11
-                        :micros 123456
-                        :minutes 31
-                        :seconds 0}
-                 :timestamp 716988660
-                 :u [:num 2]}
-                {:arr [7 8 9]
-                 :array_of_struct [{:col2 "oops"} {:col1 30}]
-                 :blob [65 66]
-                 :date {:month 6 :month-day 10 :year 5881580}
-                 :decimal -3.1
-                 :double 0.679698
-                 :enum "ok"
-                 :float 30.25
-                 :id 3
-                 :int32 4
-                 :int64 "716988600123456789"
-                 :interval {:days 0 :micros 172800000000 :months 0}
-                 :list @[8 9]
-                 :map @{1 42.001 5 -32.1}
-                 :name "Item 3"
-                 :struct {:col2 "oops"}
-                 :time {:hours 11
-                        :micros 123456
-                        :minutes 33
-                        :seconds 0}
-                 :timestamp 716988840
-                 :u [:str "three"]}])
+          @[{:arr [1 2 3]
+             :array_of_struct [{:col1 1 :col2 "ha"}
+                               {:col1 10 :col2 "he"}]
+             :blob [-86]
+             :date {:month 2 :month-day 24 :year 2003}
+             :decimal 32.1
+             :double 0.33333
+             :enum "happy"
+             :float 10.5
+             :id 1
+             :int32 2
+             :int64 6876786
+             :interval {:days 0 :micros 0 :months 12}
+             :list @[42 nil 83]
+             :map @{3 -32.1}
+             :name "Item 1"
+             :struct {:col1 1 :col2 "ha"}
+             :time {:hours 11
+                    :micros 123456
+                    :minutes 30
+                    :seconds 0}
+             :timestamp 716988600
+             :u [:num 1]}
+            {:arr [4 5 nil]
+             :array_of_struct [{:col1 2 :col2 "ho"} nil]
+             :blob [-86 -85 -84]
+             :date {:month 5 :month-day 23 :year -5877641}
+             :decimal 2.32
+             :double 0.6786788
+             :enum "sad"
+             :float 20.75
+             :id 2
+             :int32 3
+             :int64 69870870970909
+             :interval {:days 1 :micros 0 :months 1}
+             :list @[1]
+             :name "Item 2"
+             :struct {:col1 2 :col2 "ho"}
+             :time {:hours 11
+                    :micros 123456
+                    :minutes 31
+                    :seconds 0}
+             :timestamp 716988660
+             :u [:num 2]}
+            {:arr [7 8 9]
+             :array_of_struct [{:col2 "oops"} {:col1 30}]
+             :blob [65 66]
+             :date {:month 6 :month-day 10 :year 5881580}
+             :decimal -3.1
+             :double 0.679698
+             :enum "ok"
+             :float 30.25
+             :id 3
+             :int32 4
+             :int64 "716988600123456789"
+             :interval {:days 0 :micros 172800000000 :months 0}
+             :list @[8 9]
+             :map @{1 42.001 5 -32.1}
+             :name "Item 3"
+             :struct {:col2 "oops"}
+             :time {:hours 11
+                    :micros 123456
+                    :minutes 33
+                    :seconds 0}
+             :timestamp 716988840
+             :u [:str "three"]}])
         )
       )
     ))
