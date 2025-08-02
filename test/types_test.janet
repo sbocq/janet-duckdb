@@ -266,7 +266,9 @@
                         "'\\xAA\\xAB\\xAC'::BLOB"
                         "'AB'::BLOB"]
          :column-types [:blob :blob :blob]
-         :columns @[@[[170]] @[[170 171 172]] @[[65 66]]]
+         :columns @[@[@[-86]]
+                    @[@[-86 -85 -84]]
+                    @[@[65 66]]]
          :row-count 1})
       ))
   )
@@ -528,58 +530,58 @@
          :column-names ["s"]
          :column-types [:varchar]
          :columns @[@["short_0"
-                      "longstringprefix1longstringprefix3longstringprefix5longstringprefix7longstringprefix9"
+                      "longstringprefix1"
                       "short_2"
-                      "longstringprefix3longstringprefix5longstringprefix7longstringprefix9"
+                      "longstringprefix3"
                       "short_4"
-                      "longstringprefix5longstringprefix7longstringprefix9"
+                      "longstringprefix5"
                       "short_6"
-                      "longstringprefix7longstringprefix9"
+                      "longstringprefix7"
                       "short_8"
                       "longstringprefix9"]]
          :row-count 10})
       (test (result/columns-to-rows columns)
         @[{:s "short_0"}
-          {:s "longstringprefix1longstringprefix3longstringprefix5longstringprefix7longstringprefix9"}
+          {:s "longstringprefix1"}
           {:s "short_2"}
-          {:s "longstringprefix3longstringprefix5longstringprefix7longstringprefix9"}
+          {:s "longstringprefix3"}
           {:s "short_4"}
-          {:s "longstringprefix5longstringprefix7longstringprefix9"}
+          {:s "longstringprefix5"}
           {:s "short_6"}
-          {:s "longstringprefix7longstringprefix9"}
+          {:s "longstringprefix7"}
           {:s "short_8"}
           {:s "longstringprefix9"}])
       (test (result/columns-to-rows columns :coll-type :table)
         @[@{:s "short_0"}
-          @{:s "longstringprefix1longstringprefix3longstringprefix5longstringprefix7longstringprefix9"}
+          @{:s "longstringprefix1"}
           @{:s "short_2"}
-          @{:s "longstringprefix3longstringprefix5longstringprefix7longstringprefix9"}
+          @{:s "longstringprefix3"}
           @{:s "short_4"}
-          @{:s "longstringprefix5longstringprefix7longstringprefix9"}
+          @{:s "longstringprefix5"}
           @{:s "short_6"}
-          @{:s "longstringprefix7longstringprefix9"}
+          @{:s "longstringprefix7"}
           @{:s "short_8"}
           @{:s "longstringprefix9"}])
       (test (result/columns-to-rows columns :coll-type :tuple)
         @[["short_0"]
-          ["longstringprefix1longstringprefix3longstringprefix5longstringprefix7longstringprefix9"]
+          ["longstringprefix1"]
           ["short_2"]
-          ["longstringprefix3longstringprefix5longstringprefix7longstringprefix9"]
+          ["longstringprefix3"]
           ["short_4"]
-          ["longstringprefix5longstringprefix7longstringprefix9"]
+          ["longstringprefix5"]
           ["short_6"]
-          ["longstringprefix7longstringprefix9"]
+          ["longstringprefix7"]
           ["short_8"]
           ["longstringprefix9"]])
       (test (result/columns-to-rows columns :coll-type :array)
         @[@["short_0"]
-          @["longstringprefix1longstringprefix3longstringprefix5longstringprefix7longstringprefix9"]
+          @["longstringprefix1"]
           @["short_2"]
-          @["longstringprefix3longstringprefix5longstringprefix7longstringprefix9"]
+          @["longstringprefix3"]
           @["short_4"]
-          @["longstringprefix5longstringprefix7longstringprefix9"]
+          @["longstringprefix5"]
           @["short_6"]
-          @["longstringprefix7longstringprefix9"]
+          @["longstringprefix7"]
           @["short_8"]
           @["longstringprefix9"]]))
     )
