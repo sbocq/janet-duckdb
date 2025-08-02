@@ -21,11 +21,11 @@
 (defn config-flags-table
   "Get a table of all available configuration flags and their descriptions"
   []
-  (let [name-ptr (ffi/write :string "")
-        description-ptr (ffi/write :string "")]
+  (let [name-string-ptr (ffi/write :string "")
+        description-string-ptr (ffi/write :string "")]
     (-> (seq [i :range [0 (int/to-number (ffi/duckdb_config_count))]]
-          (ffi/duckdb_get_config_flag i name-ptr description-ptr)
-          [(ffi/read :string name-ptr) (ffi/read :string description-ptr)])
+          (ffi/duckdb_get_config_flag i name-string-ptr description-string-ptr)
+          [(ffi/read :string name-string-ptr) (ffi/read :string description-string-ptr)])
         (from-pairs))))
 
 (comment
@@ -60,35 +60,32 @@
   (when (= (ffi/duckdb_create_config config-ptr-ptr) ffi/DuckDBError)
     (error "Failed to allocate fresh duckdb config"))
 
-  (def db-ptr-ptr (ffi/write :ptr (ffi/write ffi/duckdb_database [nil])))
+  (def database-ptr-ptr (ffi/write :ptr (ffi/write ffi/duckdb_database [nil])))
   (defer (ffi/duckdb_destroy_config config-ptr-ptr)
-    (def duckdb-config (ffi/read ffi/duckdb_config config-ptr-ptr))
-
+    (def config-ptr (ffi/read :ptr config-ptr-ptr))
     (eachp [k v] config-map
-      (when (= (ffi/duckdb_set_config duckdb-config (string k) (string v)) ffi/DuckDBError)
+      (when (= (ffi/duckdb_set_config config-ptr (string k) (string v)) ffi/DuckDBError)
         (error (string/format "Cannot set option %q=%q" k v))))
 
-    (def err-ptr (ffi/write :string ""))
+    (def err-string-ptr (ffi/write :string ""))
 
-    (edefer (ffi/duckdb_free err-ptr)
-      (when (= (ffi/duckdb_open_ext path db-ptr-ptr duckdb-config err-ptr) ffi/DuckDBError)
-        (error (ffi/read :string err-ptr)))))
+    (edefer (ffi/duckdb_free err-string-ptr)
+      (when (= (ffi/duckdb_open_ext path database-ptr-ptr config-ptr err-string-ptr) ffi/DuckDBError)
+        (error (ffi/read :string err-string-ptr)))))
 
-  {:ptr-ptr db-ptr-ptr
-   :struct (ffi/read ffi/duckdb_database (ffi/read :ptr db-ptr-ptr))
-   :close (fn [self] (ffi/duckdb_close (self :ptr-ptr)))})
+  {:ptr (ffi/read :ptr database-ptr-ptr)
+   :close (fn [_] (ffi/duckdb_close database-ptr-ptr))})
 
 (defn connect
   "Create a connection to a database.Caller is responsible to use :close method to disconnect"
   [database]
 
   (def conn-ptr-ptr (ffi/write :ptr (ffi/write ffi/duckdb_connection [nil])))
-  (when (= (ffi/duckdb_connect (database :struct) conn-ptr-ptr) ffi/DuckDBError)
+  (when (= (ffi/duckdb_connect (database :ptr) conn-ptr-ptr) ffi/DuckDBError)
     (error "Failed to create connection to DuckDB database"))
 
-  {:ptr-ptr conn-ptr-ptr
-   :struct (ffi/read ffi/duckdb_connection (ffi/read :ptr conn-ptr-ptr))
-   :close (fn [self] (ffi/duckdb_disconnect (self :ptr-ptr)))})
+  {:ptr (ffi/read :ptr conn-ptr-ptr)
+   :close (fn [_] (ffi/duckdb_disconnect conn-ptr-ptr))})
 
 #==------------------------------------------------------------------------==#
 # Query Execution Functions
@@ -97,12 +94,12 @@
 (defn interrupt
   "Interrupt a query to the specified connection"
   [connection]
-  (ffi/duckdb_interrupt (connection :struct)))
+  (ffi/duckdb_interrupt (connection :ptr)))
 
 (defn query-progress
   "Get the progress of the current query for the specified connection"
   [connection]
-  (ffi/duckdb_query_progress (connection :struct)))
+  (ffi/duckdb_query_progress (connection :ptr)))
 
 (defn query
   "Execute a SQL query on a DuckDB connection and return the result.
@@ -111,12 +108,11 @@
 
   (def result-ptr (ffi/write ffi/duckdb_result [0 0 0 nil nil nil]))
 
-  (edefer (ffi/duckdb_destroy_result result-ptr)
-    (when (= (ffi/duckdb_query (connection :struct) query-string result-ptr) ffi/DuckDBError)
-      (error (string
-               (ffi/duckdb_error_type_key (ffi/duckdb_result_error_type result-ptr))
-               ":"
-               (ffi/duckdb_result_error result-ptr)))))
+  (when (= (ffi/duckdb_query (connection :ptr) query-string result-ptr) ffi/DuckDBError)
+    (error (string
+              (ffi/duckdb_error_type_key (ffi/duckdb_result_error_type result-ptr))
+              ":"
+              (ffi/duckdb_result_error result-ptr))))
 
   (result/make-result result-ptr))
 
@@ -132,16 +128,14 @@ rather than once per execution.
 "
   [connection query]
 
-  (def prepared-statement-ptr (ffi/write ffi/duckdb_prepared_statement [nil]))
+  (def prepared-statement-ptr-ptr (ffi/write :ptr (ffi/write ffi/duckdb_prepared_statement [nil])))
 
-  (edefer (ffi/duckdb_destroy_prepare prepared-statement-ptr)
-    (when (= (ffi/duckdb_prepare (connection :struct) query prepared-statement-ptr) ffi/DuckDBError)
-      (error (ffi/duckdb_prepare-error
-               (ffi/read ffi/duckdb_prepared_statement prepared-statement-ptr)))))
+  (when (= (ffi/duckdb_prepare (connection :ptr) query prepared-statement-ptr-ptr) ffi/DuckDBError)
+    (error (ffi/duckdb_prepare-error
+              (ffi/read :ptr prepared-statement-ptr-ptr))))
 
-  {:ptr prepared-statement-ptr
-   :struct (ffi/read ffi/duckdb_prepared_statement prepared-statement-ptr)
-   :close (fn [self] (ffi/duckdb_destroy_prepare (self :ptr)))})
+  {:ptr (ffi/read :ptr prepared-statement-ptr-ptr)
+   :close (fn [self] (ffi/duckdb_destroy_prepare prepared-statement-ptr-ptr))})
 
 (defn execute-prepared
   "Executes the prepared statement with the given bound parameters, and returns a materialized query result.
@@ -152,9 +146,8 @@ between calls to this function.
 
   (def result-ptr (ffi/write ffi/duckdb_result [0 0 0 nil nil nil]))
 
-  (edefer (ffi/duckdb_destroy_result result-ptr)
-    (when (= (ffi/duckdb_execute_prepared (prepared-statement :struct) result-ptr)
-             ffi/DuckDBError)
-      (error (ffi/duckdb_result_error result-ptr))))
+  (when (= (ffi/duckdb_execute_prepared (prepared-statement :ptr) result-ptr)
+            ffi/DuckDBError)
+    (error (ffi/duckdb_result_error result-ptr)))
 
   (result/make-result result-ptr))

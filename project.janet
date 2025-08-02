@@ -10,7 +10,7 @@
                   :tag "v2.9.0"}])
 
 (declare-source
-  :prefix "janet-duckdb"
+  :prefix "duckdb"
   :source
   ["src/db.janet"
    "src/ffi.janet"

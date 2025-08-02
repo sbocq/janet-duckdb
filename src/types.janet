@@ -187,9 +187,12 @@
 
   {:type-key type-key :ffi-data-type ffi-data-type :janet-from-value janet-from-value})
 
-(defn logical-type-spec [logical-type]
+(defn destroy-logical-type [logical-type-ptr]
+  (ffi/duckdb_destroy_logical_type (ffi/write :ptr logical-type-ptr)))
 
-  (def type-id (ffi/duckdb_get_type_id logical-type))
+(defn logical-type-spec [logical-type-ptr]
+
+  (def type-id (ffi/duckdb_get_type_id logical-type-ptr))
   (def type-spec (type-id-spec type-id))
   (def type-key (type-spec :type-key))
 
@@ -202,59 +205,59 @@
       type-key
       
       ffi/DUCKDB_TYPE_ENUM
-      (let [type-spec (type-id-spec (ffi/duckdb_enum_internal_type logical-type))
-            enum-size (int/to-number (ffi/duckdb_enum_dictionary_size logical-type))
+      (let [type-spec (type-id-spec (ffi/duckdb_enum_internal_type logical-type-ptr))
+            enum-size (int/to-number (ffi/duckdb_enum_dictionary_size logical-type-ptr))
             dict (table/new enum-size)]
         (for i 0 enum-size
-          (def enum-val-ptr (ffi/duckdb_enum_dictionary_value logical-type i))
+          (def enum-val-ptr (ffi/duckdb_enum_dictionary_value logical-type-ptr i))
           (defer (ffi/duckdb_free enum-val-ptr)
             (put dict i (ffi/deref-c-string-ptr enum-val-ptr))))
         [type-key {:members (tuple/slice (values dict))}])
         
       ffi/DUCKDB_TYPE_LIST
-      (let [child-type (ffi/duckdb_list_type_child_type logical-type)]
-        (defer (ffi/duckdb_destroy_logical_type (ffi/write ffi/duckdb_logical_type child-type))
-          [type-key (logical-type-spec child-type)]))
+      (let [child-type-ptr (ffi/duckdb_list_type_child_type logical-type-ptr)]
+        (defer (destroy-logical-type child-type-ptr)
+          [type-key (logical-type-spec child-type-ptr)]))
 
       ffi/DUCKDB_TYPE_STRUCT
-      (let [struct-size (int/to-number (ffi/duckdb_struct_type_child_count logical-type))
+      (let [struct-size (int/to-number (ffi/duckdb_struct_type_child_count logical-type-ptr))
             struct-keys (array/new struct-size)
             struct-types (array/new struct-size)]
         # collect struct field names and values
         (for i 0 struct-size
-          (def struct-name-ptr (ffi/duckdb_struct_type_child_name logical-type i))
+          (def struct-name-ptr (ffi/duckdb_struct_type_child_name logical-type-ptr i))
           (defer (ffi/duckdb_free struct-name-ptr)
             (put struct-keys i (ffi/deref-c-string-ptr struct-name-ptr)))
-          (def child-type (ffi/duckdb_struct_type_child_type logical-type i))
-          (defer (ffi/duckdb_destroy_logical_type (ffi/write ffi/duckdb_logical_type child-type))
-            (put struct-types i (logical-type-spec child-type))))
+          (def child-type-ptr (ffi/duckdb_struct_type_child_type logical-type-ptr i))
+          (defer (destroy-logical-type child-type-ptr)
+            (put struct-types i (logical-type-spec child-type-ptr))))
         [type-key (struct ;(mapcat array struct-keys struct-types))])
       
       ffi/DUCKDB_TYPE_MAP
       # Internally map vectors are stored as a LIST[STRUCT(key KEY_TYPE, value VALUE_TYPE)].
-      (let [child-type (ffi/duckdb_list_type_child_type logical-type)]
-        (defer (ffi/duckdb_destroy_logical_type (ffi/write ffi/duckdb_logical_type child-type))
-          (def [_ {"key" key-type "value" val-type}] (logical-type-spec child-type))
+      (let [child-type-ptr (ffi/duckdb_list_type_child_type logical-type-ptr)]
+        (defer (destroy-logical-type child-type-ptr)
+          (def [_ {"key" key-type "value" val-type}] (logical-type-spec child-type-ptr))
           [type-key {key-type val-type}]))
 
       ffi/DUCKDB_TYPE_ARRAY
-      (let [array-size (int/to-number (ffi/duckdb_array_type_array_size logical-type))]
-        (def child-type (ffi/duckdb_array_type_child_type logical-type))
-        (defer (ffi/duckdb_destroy_logical_type (ffi/write ffi/duckdb_logical_type child-type))
-          [type-key [(logical-type-spec child-type) array-size]]))
+      (let [array-size (int/to-number (ffi/duckdb_array_type_array_size logical-type-ptr))]
+        (def child-type-ptr (ffi/duckdb_array_type_child_type logical-type-ptr))
+        (defer (destroy-logical-type child-type-ptr)
+          [type-key [(logical-type-spec child-type-ptr) array-size]]))
 
       ffi/DUCKDB_TYPE_UNION
-      (let [union-size (int/to-number (ffi/duckdb_union_type_member_count logical-type))
+      (let [union-size (int/to-number (ffi/duckdb_union_type_member_count logical-type-ptr))
             union-tags (array/new union-size)
             union-types (array/new union-size)]
         # collect union field names and values
         (for i 0 union-size
-          (def union-name-ptr (ffi/duckdb_union_type_member_name logical-type i))
+          (def union-name-ptr (ffi/duckdb_union_type_member_name logical-type-ptr i))
           (defer (ffi/duckdb_free union-name-ptr)
             (put union-tags i (keyword (ffi/deref-c-string-ptr union-name-ptr))))
-          (def child-type (ffi/duckdb_union_type_member_type logical-type i))
-          (defer (ffi/duckdb_destroy_logical_type (ffi/write ffi/duckdb_logical_type child-type))
-            (put union-types i (logical-type-spec child-type))))
+          (def child-type-ptr (ffi/duckdb_union_type_member_type logical-type-ptr i))
+          (defer (destroy-logical-type child-type-ptr)
+            (put union-types i (logical-type-spec child-type-ptr))))
         [type-key (struct ;(mapcat array union-tags union-types))])
         
       # Default
@@ -287,15 +290,15 @@
         (+= row-idx 1))
       janet-array)))
 
-(defn janet-array-from-vector [duckdb-vector offset len]
+(defn janet-array-from-vector [duckdb-vector-ptr offset len]
 
-  (def logical-type (ffi/duckdb_vector_get_column_type duckdb-vector))
-  (defer (ffi/duckdb_destroy_logical_type (ffi/write ffi/duckdb_logical_type logical-type))
-    (def type-id (ffi/duckdb_get_type_id logical-type))
+  (def logical-type-ptr (ffi/duckdb_vector_get_column_type duckdb-vector-ptr))
+  (defer (destroy-logical-type logical-type-ptr)
+    (def type-id (ffi/duckdb_get_type_id logical-type-ptr))
     (def type-spec (type-id-spec type-id))
   
-    (def validity-mask (ffi/duckdb_vector_get_validity duckdb-vector))
-    (def data-ptr (ffi/duckdb_vector_get_data duckdb-vector))
+    (def validity-mask (ffi/duckdb_vector_get_validity duckdb-vector-ptr))
+    (def data-ptr (ffi/duckdb_vector_get_data duckdb-vector-ptr))
 
     (if-let [ffi-data-type (type-spec :ffi-data-type)]
       # simple types
@@ -308,8 +311,8 @@
       # logical types
       (case type-id
         ffi/DUCKDB_TYPE_DECIMAL
-        (let [scale (math/pow 10 (ffi/duckdb_decimal_scale logical-type))
-              type-spec (type-id-spec (ffi/duckdb_decimal_internal_type logical-type))]
+        (let [scale (math/pow 10 (ffi/duckdb_decimal_scale logical-type-ptr))
+              type-spec (type-id-spec (ffi/duckdb_decimal_internal_type logical-type-ptr))]
           (janet-array-from-data data-ptr
                                  validity-mask
                                  (type-spec :ffi-data-type)
@@ -320,11 +323,11 @@
                                  len))
       
         ffi/DUCKDB_TYPE_ENUM
-        (let [type-spec (type-id-spec (ffi/duckdb_enum_internal_type logical-type))
-              enum-size (int/to-number (ffi/duckdb_enum_dictionary_size logical-type))
+        (let [type-spec (type-id-spec (ffi/duckdb_enum_internal_type logical-type-ptr))
+              enum-size (int/to-number (ffi/duckdb_enum_dictionary_size logical-type-ptr))
               dict (table/new enum-size)]
           (for i 0 enum-size
-            (def enum-val-ptr (ffi/duckdb_enum_dictionary_value logical-type i))
+            (def enum-val-ptr (ffi/duckdb_enum_dictionary_value logical-type-ptr i))
             (defer (ffi/duckdb_free enum-val-ptr)
               (put dict i (ffi/deref-c-string-ptr enum-val-ptr))))
           (janet-array-from-data data-ptr
@@ -335,7 +338,7 @@
                                  len))
         
         ffi/DUCKDB_TYPE_LIST
-        (let [child-vector (ffi/duckdb_list_vector_get_child duckdb-vector)]
+        (let [child-vector-ptr (ffi/duckdb_list_vector_get_child duckdb-vector-ptr)]
           (seq [list-entry :in (janet-array-from-data data-ptr
                                                       validity-mask
                                                       ffi/duckdb_list_entry
@@ -344,19 +347,19 @@
                                                       len)]
             (when list-entry
               (def [offset len] list-entry)
-              (janet-array-from-vector child-vector (int/to-number offset) (int/to-number len)))))
+              (janet-array-from-vector child-vector-ptr (int/to-number offset) (int/to-number len)))))
 
         ffi/DUCKDB_TYPE_STRUCT
-        (let [struct-size (int/to-number (ffi/duckdb_struct_type_child_count logical-type))
+        (let [struct-size (int/to-number (ffi/duckdb_struct_type_child_count logical-type-ptr))
               struct-keys (array/new struct-size)
               struct-vals (array/new struct-size)]
           # collect struct field names and values
           (for i 0 struct-size
-            (def struct-name-ptr (ffi/duckdb_struct_type_child_name logical-type i))
+            (def struct-name-ptr (ffi/duckdb_struct_type_child_name logical-type-ptr i))
             (defer (ffi/duckdb_free struct-name-ptr)
               (put struct-keys i (keyword (ffi/deref-c-string-ptr struct-name-ptr))))
             (put struct-vals i (janet-array-from-vector
-                                 (ffi/duckdb_struct_vector_get_child duckdb-vector i)
+                                 (ffi/duckdb_struct_vector_get_child duckdb-vector-ptr i)
                                  offset
                                  len)))
 
@@ -368,7 +371,7 @@
       
         ffi/DUCKDB_TYPE_MAP
         # Internally map vectors are stored as a LIST[STRUCT(key KEY_TYPE, value VALUE_TYPE)].
-        (let [child-vector (ffi/duckdb_list_vector_get_child duckdb-vector)]
+        (let [child-vector-ptr (ffi/duckdb_list_vector_get_child duckdb-vector-ptr)]
           (seq [list-entry :in (janet-array-from-data data-ptr
                                                       validity-mask
                                                       ffi/duckdb_list_entry
@@ -377,7 +380,7 @@
                                                       len)]
             (when list-entry
               (def [offset len] list-entry)
-              (def kv-structs (janet-array-from-vector child-vector
+              (def kv-structs (janet-array-from-vector child-vector-ptr
                                                        (int/to-number offset)
                                                        (int/to-number len)))
               (def tbl (table/new (length kv-structs)))
@@ -386,34 +389,34 @@
               tbl)))
 
         ffi/DUCKDB_TYPE_ARRAY
-        (let [array-size (int/to-number (ffi/duckdb_array_type_array_size logical-type))
-              child-vector (ffi/duckdb_array_vector_get_child duckdb-vector)]
+        (let [array-size (int/to-number (ffi/duckdb_array_type_array_size logical-type-ptr))
+              child-vector-ptr (ffi/duckdb_array_vector_get_child duckdb-vector-ptr)]
           (var row-idx (dec offset))
           (seq [offset :range [offset (+ offset (* len array-size)) array-size]]
             (when (ffi/duckdb_validity_row_is_valid validity-mask (+= row-idx 1))
-              (tuple/slice (janet-array-from-vector child-vector offset array-size)))))
+              (tuple/slice (janet-array-from-vector child-vector-ptr offset array-size)))))
 
         ffi/DUCKDB_TYPE_UNION
-        (let [struct-size (int/to-number (ffi/duckdb_struct_type_child_count logical-type))
+        (let [struct-size (int/to-number (ffi/duckdb_struct_type_child_count logical-type-ptr))
               struct-keys (array/new struct-size)
               struct-vals (array/new struct-size)]
           # collect struct field names and values
           (for i 0 struct-size
-            (def struct-name-ptr (ffi/duckdb_struct_type_child_name logical-type i))
+            (def struct-name-ptr (ffi/duckdb_struct_type_child_name logical-type-ptr i))
             (defer (ffi/duckdb_free struct-name-ptr)
               (put struct-keys i (keyword (ffi/deref-c-string-ptr struct-name-ptr))))
             (put struct-vals i (janet-array-from-vector
-                                 (ffi/duckdb_struct_vector_get_child duckdb-vector i)
+                                 (ffi/duckdb_struct_vector_get_child duckdb-vector-ptr i)
                                  offset
                                  len)))
-          (def union-count (int/to-number (ffi/duckdb_union_type_member_count logical-type)))
+          (def union-count (int/to-number (ffi/duckdb_union_type_member_count logical-type-ptr)))
           (def tag-id-to-key (table/new union-count))
           (def tag-key-to-id (table/new union-count))
           (def tag-id-to-val-idx (table/new union-count))
 
           # collect tag ids
           (for i 0 union-count
-            (def union-tag-ptr (ffi/duckdb_union_type_member_name logical-type i))
+            (def union-tag-ptr (ffi/duckdb_union_type_member_name logical-type-ptr i))
             (defer (ffi/duckdb_free union-tag-ptr)
               (let [tag-key (keyword (ffi/deref-c-string-ptr union-tag-ptr))]
                 (put tag-id-to-key i tag-key)

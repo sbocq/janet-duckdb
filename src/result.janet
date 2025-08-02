@@ -64,10 +64,9 @@
    :column-types (if logical-type
                    (tuple/slice (let [result-ptr (result :ptr)]
                                   (seq [i :range [0 column-count]]
-                                    (def logical-type (ffi/duckdb_column_logical_type result-ptr i))
-                                    (defer (ffi/duckdb_destroy_logical_type
-                                             (ffi/write ffi/duckdb_logical_type logical-type))
-                                      (types/logical-type-spec logical-type)))))
+                                    (def logical-type-ptr (ffi/duckdb_column_logical_type result-ptr i))
+                                    (defer (types/destroy-logical-type logical-type-ptr)
+                                      (types/logical-type-spec logical-type-ptr)))))
                    column-types)})
 
 (defn- make-columns-result [column-count column-names column-types columns row-count]
@@ -85,7 +84,9 @@
 
   (def {:column-count column-count
         :column-names column-names
-        :column-types column-types} result)
+        :column-types column-types
+        :struct result-struct} result)
+
   (def columns (array/new column-count))
 
   # Prepare table with arrays that we will append to
@@ -93,15 +94,15 @@
     (array/push columns @[]))
 
   # Process data chunks
-  (loop [data-chunk-ptr :iterate (ffi/duckdb_fetch_chunk (result :struct))
+  (loop [data-chunk-ptr :iterate (ffi/duckdb_fetch_chunk result-struct)
          :until (nil? data-chunk-ptr)]
     (defer (ffi/duckdb_destroy_data_chunk (ffi/write :ptr data-chunk-ptr))
       (def chunk-size (int/to-number (ffi/duckdb_data_chunk_get_size data-chunk-ptr)))
 
       # Process each column in the chunk
       (for col-idx 0 column-count
-        (let [col-vector (ffi/duckdb_data_chunk_get_vector data-chunk-ptr col-idx)]
-          (def array (types/janet-array-from-vector col-vector 0 chunk-size))
+        (let [col-vector-ptr (ffi/duckdb_data_chunk_get_vector data-chunk-ptr col-idx)]
+          (def array (types/janet-array-from-vector col-vector-ptr 0 chunk-size))
           (array/concat (columns col-idx) array)))))
 
   (make-columns-result column-count column-names column-types columns (length (columns 0))))
@@ -112,14 +113,15 @@
 
   (def {:column-count column-count
         :column-names column-names
-        :column-types column-types} result)
+        :column-types column-types
+        :struct result-struct} result)
 
   # Track chunck offset and size across generations
   (var chunk-offset 0)
   (var chunk-size 0)
 
   # Process data chunks
-  (generate [data-chunk-ptr :iterate (ffi/duckdb_fetch_chunk (result :struct))
+  (generate [data-chunk-ptr :iterate (ffi/duckdb_fetch_chunk result-struct)
              :until (nil? data-chunk-ptr)]
     (+= chunk-offset chunk-size)
 
@@ -130,8 +132,8 @@
 
       # Process each column in the chunk
       (for col-idx 0 column-count
-        (let [col-vector (ffi/duckdb_data_chunk_get_vector data-chunk-ptr col-idx)
-              array (types/janet-array-from-vector col-vector 0 chunk-size)]
+        (let [col-vector-ptr (ffi/duckdb_data_chunk_get_vector data-chunk-ptr col-idx)
+              array (types/janet-array-from-vector col-vector-ptr 0 chunk-size)]
           (array/push columns array))))
 
     (-> (make-columns-result column-count column-names column-types columns chunk-size)

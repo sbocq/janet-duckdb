@@ -8,10 +8,41 @@
            (def db (db/open ":memory:"))
            (def conn (db/connect db))
            [db conn])
-  :reset (fn [[_ conn]] (db/query conn "DROP TABLE IF EXISTS types_test"))
+  :reset (fn [[_ conn]] (with [result (db/query conn "DROP TABLE IF EXISTS types_test")]))
   :teardown (fn [[db conn]]
               (:close conn)
               (:close db)))
+
+#==------------------------------------------------------------------------==#
+# Query test
+#==------------------------------------------------------------------------==#
+(deftest "simple query test"
+  (test (with [db (db/open ":memory:")]
+          (with [conn (db/connect db)]
+            (def result (db/query conn "SELECT 1"))
+            (:close result)))
+    nil))
+
+(deftest "simple result test"
+  (with [db (db/open ":memory:")]
+    (with [conn (db/connect db)]
+      (with [result (db/query conn "SELECT 1")]
+        (test (result/statement-type result) :DUCKDB_STATEMENT_TYPE_SELECT)
+        (test (result/return-type result) :DUCKDB_RESULT_TYPE_QUERY_RESULT)
+        (test (result/rows-changed result) 0)
+        (test (result/describe-columns result :logical-type true)
+          {:column-count 1
+           :column-names ["1"]
+           :column-types [:int]})
+        (test (result/fetch-columns result)
+          {:column @column-from-name
+           :column-count 1
+           :column-names ["1"]
+           :column-types [:int]
+           :columns @[@[1]]
+           :row-count 1})
+        )
+      )))
 
 #==------------------------------------------------------------------------==#
 # Simple types
