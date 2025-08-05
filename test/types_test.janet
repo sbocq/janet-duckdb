@@ -44,6 +44,20 @@
         )
       )))
 
+(deftest "invalid result test"
+  (var result nil)
+  (with [db (db/open ":memory:")]
+    (with [conn (db/connect db)]
+      (with [result-inner (db/query conn "SELECT 1")]
+        (set result result-inner))))
+
+  (test-error (result/statement-type result) "result already closed")
+  (test-error (result/return-type result) "result already closed")
+  (test-error (result/rows-changed result) "result already closed")
+  (test-error (result/describe-columns result :logical-type true) "result already closed")
+  (test-error (result/fetch-columns result) "result already closed")
+  )
+
 #==------------------------------------------------------------------------==#
 # Simple types
 #==------------------------------------------------------------------------==#

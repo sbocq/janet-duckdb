@@ -24,26 +24,38 @@
                                   (types/type-id-spec))
                                :type-key)))
 
+  (var valid true)
+
   {:column-count column-count
    :column-names (tuple/slice column-names)
    :column-types (tuple/slice column-types)
    :ptr result-ptr
    :struct (ffi/read ffi/duckdb_result result-ptr)
-   :close (fn [self] (ffi/duckdb_destroy_result (self :ptr)))})
+   :close (fn [self]
+            (:assert-valid self)
+            (ffi/duckdb_destroy_result (self :ptr))
+            (set valid false)
+            nil)
+   :assert-valid (fn [self]
+                   (unless valid
+                     (error "result already closed")))})
 
 (defn rows-changed
   "Get the number of rows changed in a DuckDB result"
   [result]
+  (:assert-valid result)
   (int/to-number (ffi/duckdb_rows_changed (result :ptr))))
 
 (defn return-type
   "Get the return type of a DuckDB result"
   [result]
+  (:assert-valid result)
   (ffi/duckdb_result_type_key (ffi/duckdb_result_return_type (result :struct))))
 
 (defn statement-type
   "Get the return type of a DuckDB result"
   [result]
+  (:assert-valid result)
   (ffi/duckdb_statement_type_key (ffi/duckdb_result_statement_type (result :struct))))
 
 (defn describe-columns
@@ -52,6 +64,8 @@
   types of the columns."
 
   [result &keys {:logical-type logical-type}]
+
+  (:assert-valid result)
 
   (default logical-type false)
 
@@ -82,6 +96,8 @@
   "Fetch all column values from a DuckDB result."
   [result]
 
+  (:assert-valid result)
+
   (def {:column-count column-count
         :column-names column-names
         :column-types column-types
@@ -110,6 +126,8 @@
 (defn generate-columns
   "Generate columns in chunks from a DuckDB result."
   [result]
+
+  (:assert-valid result)
 
   (def {:column-count column-count
         :column-names column-names
