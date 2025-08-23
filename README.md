@@ -69,16 +69,7 @@ Assuming you've added `janet-duckdb` as a dependency and run `jpm -l deps`:
 - Still WIP — expect breaking changes
 - Most types are supported
 
-### Types supported
-
-## Status
-
-- Basic FFI bindings around the DuckDB C API
-- Most types are supported
-- Usable for simple integrations
-- Still WIP — expect breaking changes
-
-### Type Support
+## Types supported
 
 Most DuckDB types are supported out of the box. See `test/types_test.janet` for examples.
 
