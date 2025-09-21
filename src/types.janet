@@ -187,7 +187,7 @@
       ffi/DUCKDB_TYPE_TIMESTAMP_TZ [:timestampz ffi/duckdb_time_tz janet-from-timestamp]
       #
       ffi/DUCKDB_TYPE_ANY [:any nil nil]                     #TODO
-      ffi/DUCKDB_TYPE_VARINT [:varint ffi/duckdb_varint nil] #TODO
+      ffi/DUCKDB_TYPE_BIGNUM [:bignum ffi/duckdb_bignum_t nil] #TODO
       ffi/DUCKDB_TYPE_SQLNULL [:sqlnull nil nil]             #TODO
       ffi/DUCKDB_TYPE_STRING_LITERAL [:string_literal :string nil]            #TODO
       ffi/DUCKDB_TYPE_INTEGER_LITERAL [:integer_literal :int64 int/to-number] #TODO

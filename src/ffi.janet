@@ -190,10 +190,11 @@
   DUCKDB_TYPE_TIME_TZ 30
   DUCKDB_TYPE_TIMESTAMP_TZ 31
   DUCKDB_TYPE_ANY 34
-  DUCKDB_TYPE_VARINT 35
+  DUCKDB_TYPE_BIGNUM 35
   DUCKDB_TYPE_SQLNULL 36
   DUCKDB_TYPE_STRING_LITERAL 37
   DUCKDB_TYPE_INTEGER_LITERAL 38
+  DUCKDB_TYPE_TIME_NS 39
   )
 
 #==------------------------------------------------------------------------==#
@@ -224,6 +225,10 @@
   sec :int8
   micros :int32)
 
+# TIME_NS is stored as nanoseconds since 00:00:00.
+(defcstruct duckdb_time_ns
+  nanos :int64)
+
 # TIME_TZ is stored as 40 bits for int64_t micros, and 24 bits for int32_t offset
 (defcstruct duckdb_time_tz
   bits :uint64)
@@ -237,6 +242,10 @@
 # Use the duckdb_from_timestamp and duckdb_to_timestamp functions to extract individual information
 (defcstruct duckdb_timestamp
   micros :int64)
+
+(defcstruct duckdb_timestamp_struct
+  date duckdb_date_struct
+  time duckdb_time_struct)
 
 # TIMESTAMP_S values are stored as seconds since 1970-01-01
 (defcstruct duckdb_timestamp_s
@@ -285,12 +294,6 @@
   rows_processed :uint64
   total_rows_to_process :uint64)
 
-(defcstruct duckdb_column_t
-  deprecated_data :ptr
-  deprecated_nullmask :ptr
-  deprecated_type :ptr
-  internal_data :ptr)
-
 (def duckdb_vector :ptr)
 
 # The internal representation of a VARCHAR (string_t)
@@ -304,6 +307,17 @@
 (defcstruct duckdb_string_t
   value duckdb_string_value_t)
 
+# List entry structure
+(defcstruct duckdb_list_entry
+  offset idx_t
+  length idx_t)
+
+(defcstruct duckdb_column_t
+  deprecated_data :ptr
+  deprecated_nullmask :ptr
+  deprecated_type :ptr
+  internal_data :ptr)
+
 # BLOBs are composed of a byte pointer and a size
 (defcstruct duckdb_blob_t
   data :ptr
@@ -315,17 +329,13 @@
   data :uint8
   size idx_t)
 
-# VARINTs are composed of a byte pointer, a size, and an is_negative bool
+# BIGNUMs are composed of a byte pointer, a size, and an is_negative bool
 # The absolute value of the number is stored in `data` in little endian format
-(defcstruct duckdb_varint
-  data :uint8
+# You must free `data` with `duckdb_free`.
+(defcstruct duckdb_bignum_t
+  data :ptr
   size idx_t
   is_negative :bool)
-
-# List entry structure
-(defcstruct duckdb_list_entry
-  offset idx_t
-  length idx_t)
 
 # A query result consists of a pointer to its internal data
 # Must be freed with 'duckdb_destroy_result'
@@ -399,10 +409,6 @@
 # Holds a DuckDB value, which wraps a type
 # Must be destroyed with `duckdb_destroy_value`
 (defcstruct duckdb_value
-  internal_ptr :ptr)
-
-# Holds a recursive tree that matches the query plan
-(defcstruct duckdb_profiling_info
   internal_ptr :ptr)
 
 #==------------------------------------------------------------------------==#
@@ -485,7 +491,11 @@
 (ffi/defbind duckdb_param_type duckdb_type [prepared-statement-ptr :ptr param-idx idx_t])
 (ffi/defbind duckdb_param_logical_type :ptr [prepared-statement-ptr :ptr param-idx idx_t])
 (ffi/defbind duckdb_clear_bindings duckdb_state [prepared-statement-ptr :ptr])
-(ffi/defbind duckdb_prepared_statementype duckdb_statement_type [statement-ptr :ptr])
+(ffi/defbind duckdb_prepared_statement_type duckdb_statement_type [prepared-statement-ptr :ptr])
+(ffi/defbind duckdb_prepared_statement_column_count idx_t [prepared-statement-ptr :ptr])
+(ffi/defbind duckdb_prepared_statement_column_name :string [prepared-statement-ptr :ptr col-idx idx_t])
+(ffi/defbind duckdb_prepared_statement_column_logical_type :ptr [prepared-statement-ptr :ptr col-idx idx_t])
+(ffi/defbind duckdb_prepared_statement_column_type duckdb_type [prepared-statement-ptr :ptr col-idx idx_t])
 
 # Bind value functions
 (ffi/defbind duckdb_bind_value duckdb_state [prepared-statement-ptr :ptr param-idx idx_t val-ptr :ptr])
@@ -543,6 +553,7 @@
 (ffi/defbind duckdb_create_int64 :ptr [input :int64])
 (ffi/defbind duckdb_create_hugeint :ptr [input duckdb_hugeint])
 (ffi/defbind duckdb_create_uhugeint :ptr [input duckdb_uhugeint])
+(ffi/defbind duckdb_create_bignum :ptr [input duckdb_bignum_t])
 (ffi/defbind duckdb_create_uint8 :ptr [input :uint8])
 (ffi/defbind duckdb_create_uint16 :ptr [input :uint16])
 (ffi/defbind duckdb_create_uint32 :ptr [input :uint32])
@@ -551,6 +562,7 @@
 (ffi/defbind duckdb_create_double :ptr [input :double])
 (ffi/defbind duckdb_create_date :ptr [input duckdb_date])
 (ffi/defbind duckdb_create_time :ptr [input duckdb_time])
+(ffi/defbind duckdb_create_time_ns :ptr [input duckdb_time_ns])
 (ffi/defbind duckdb_create_timestamp :ptr [input duckdb_timestamp])
 (ffi/defbind duckdb_create_interval :ptr [input duckdb_interval])
 (ffi/defbind duckdb_create_null :ptr [])
@@ -568,6 +580,7 @@
 (ffi/defbind duckdb_get_int64 :int64 [value-ptr :ptr])
 (ffi/defbind duckdb_get_hugeint duckdb_hugeint [value-ptr :ptr])
 (ffi/defbind duckdb_get_uhugeint duckdb_uhugeint [value-ptr :ptr])
+(ffi/defbind duckdb_get_bignum duckdb_bignum_t [value-ptr :ptr])
 (ffi/defbind duckdb_get_uint8 :uint8 [value-ptr :ptr])
 (ffi/defbind duckdb_get_uint16 :uint16 [value-ptr :ptr])
 (ffi/defbind duckdb_get_uint32 :uint32 [value-ptr :ptr])
@@ -576,6 +589,7 @@
 (ffi/defbind duckdb_get_double :double [value-ptr :ptr])
 (ffi/defbind duckdb_get_date duckdb_date [value-ptr :ptr])
 (ffi/defbind duckdb_get_time duckdb_time [value-ptr :ptr])
+(ffi/defbind duckdb_get_time_ns duckdb_time_ns [value-ptr :ptr])
 (ffi/defbind duckdb_get_timestamp duckdb_timestamp [value-ptr :ptr])
 (ffi/defbind duckdb_get_interval duckdb_interval [value-ptr :ptr])
 (ffi/defbind duckdb_get_decimal duckdb_decimal_t [value-ptr :ptr])
