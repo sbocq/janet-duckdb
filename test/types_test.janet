@@ -372,7 +372,7 @@
                       "CAST('1992-09-20 11:30:00.123456' AS TIME WITH TIME ZONE)"
                       "CAST('1992-09-20 11:30:00.123456-02:00' AS TIME WITH TIME ZONE)"
                       "CAST('1992-09-20 11:30:00.123456+05:30' AS TIME WITH TIME ZONE)"]
-       :column-types [:time :time-tz :time-tz :time-tz]})
+       :column-types [:time :time_tz :time_tz :time_tz]})
     (let [columns (result/fetch-columns result)]
       (test columns
         {:column @column-from-name
@@ -381,23 +381,23 @@
                         "CAST('1992-09-20 11:30:00.123456' AS TIME WITH TIME ZONE)"
                         "CAST('1992-09-20 11:30:00.123456-02:00' AS TIME WITH TIME ZONE)"
                         "CAST('1992-09-20 11:30:00.123456+05:30' AS TIME WITH TIME ZONE)"]
-         :column-types [:time :time-tz :time-tz :time-tz]
+         :column-types [:time :time_tz :time_tz :time_tz]
          :columns @[@[{:hours 11
                        :micros 123456
                        :minutes 30
                        :seconds 0}]
-                    @[{:hours 63
-                       :micros 28895
-                       :minutes 20
-                       :seconds 48}]
-                    @[{:hours 63
-                       :micros 28895
-                       :minutes 20
-                       :seconds 48}]
-                    @[{:hours 63
-                       :micros 28895
-                       :minutes 20
-                       :seconds 48}]]
+                    @[{:hours 10
+                       :micros 123456
+                       :minutes 30
+                       :seconds 0}]
+                    @[{:hours 12
+                       :micros 123456
+                       :minutes 30
+                       :seconds 0}]
+                    @[{:hours 5
+                       :micros 123456
+                       :minutes 0
+                       :seconds 0}]]
          :row-count 1})
 
       ))
@@ -425,8 +425,8 @@
                       :timestamp
                       :timestamp_ms
                       :timestamp_s
-                      :timestampz
-                      :timestampz]})
+                      :timestamp_tz
+                      :timestamp_tz]})
     (let [columns (result/fetch-columns result)]
       (test columns
         {:column @column-from-name
@@ -441,8 +441,8 @@
                         :timestamp
                         :timestamp_ms
                         :timestamp_s
-                        :timestampz
-                        :timestampz]
+                        :timestamp_tz
+                        :timestamp_tz]
          :columns @[@["716988600123456789"]
                     @[716988600123456]
                     @[716988600123]

@@ -5,8 +5,8 @@
 	touch $@
 
 judge: .deps.stamp
-	./jpm_tree/bin/judge
+	TZ=Europe/Brussels ./jpm_tree/bin/judge
 
 valgrind: | judge
-	valgrind -s --leak-check=full --track-origins=yes janet ./jpm_tree/bin/judge
+	TS=Europe/Brussels valgrind -s --leak-check=full --track-origins=yes janet ./jpm_tree/bin/judge
 

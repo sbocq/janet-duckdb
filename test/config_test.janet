@@ -3,7 +3,7 @@
 
 (test (with [db (db/open)]
         (db/library-version))
-  "v1.4.0")
+  "v1.4.3")
 
 (test (with [db (db/open)]
         (db/config-flags-table))
@@ -53,6 +53,7 @@
     "debug_force_external" "DEBUG SETTING: force out-of-core computation for operators that support it, used for testing"
     "debug_force_no_cross_product" "DEBUG SETTING: Force disable cross product generation when hyper graph isn't connected, used for testing"
     "debug_skip_checkpoint_on_commit" "DEBUG SETTING: skip checkpointing on commit"
+    "debug_verify_blocks" "DEBUG SETTING: verify block metadata during checkpointing"
     "debug_verify_vector" "DEBUG SETTING: enable vector verification"
     "debug_window_mode" "DEBUG SETTING: switch window mode to use"
     "default_block_size" "The default block size for new duckdb database files (new as-in, they do not yet exist)."
@@ -111,6 +112,7 @@
     "http_retry_wait_ms" "httpfs"
     "http_timeout" "httpfs"
     "httpfs_client_implementation" "httpfs"
+    "iceberg_via_aws_sdk_for_catalog_interactions" "iceberg"
     "ieee_floating_point_ops" "Use IEE754-compliant floating point operations (returning NAN instead of errors/NULL)."
     "immediate_transaction_mode" "Whether transactions should be started lazily when needed, or immediately when BEGIN TRANSACTION is called"
     "index_scan_max_count" "The maximum index scan count sets a threshold for index scans. If fewer than MAX(index_scan_max_count, index_scan_percentage * total_row_count) rows match, we perform an index scan instead of a table scan."
@@ -128,6 +130,7 @@
     "max_temp_directory_size" "The maximum amount of data stored inside the 'temp_directory' (when set) (e.g. 1GB)"
     "max_vacuum_tasks" "The maximum vacuum tasks to schedule during a checkpoint."
     "memory_limit" "The maximum memory of the system (e.g. 1GB)"
+    "merge_http_secret_into_s3_request" "httpfs"
     "merge_join_threshold" "The maximum number of rows on either table to choose a merge join"
     "mysql_bit1_as_boolean" "mysql_scanner"
     "mysql_debug_show_queries" "mysql_scanner"

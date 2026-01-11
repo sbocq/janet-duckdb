@@ -59,7 +59,7 @@ Assuming you've added `janet-duckdb` as a dependency and run `jpm -l deps`:
 
 ```bash
 ❯ jpm -l janet test.janet
-"v1.4.0"
+"v1.4.3"
 ```
 
 ## Status
@@ -79,10 +79,10 @@ Most DuckDB types are supported out of the box. See `test/types_test.janet` for 
 - **HUGEINT**, **UHUGEINT** → `number`
 - **TIMESTAMP_S** → `number (epoch s)`
 - **TIMESTAMP_MS** → `number (epoch ms)`
-- **TIMESTAMP**, **TIMESTAMPZ** → `number (epoch µs)`
+- **TIMESTAMP**, **TIMESTAMP_TZ** → `number (epoch µs)`
 - **TIMESTAMP_NS** → `number or core/s64 (epoch ns)`
 - **DATE** → `{:month number :month-day number :year number}`
-- **TIME** → `{:hours number :minutes number :seconds number :micros number}`
+- **TIME**, **TIME_TZ** → `{:hours number :minutes number :seconds number :micros number}`
 - **INTERVAL** → `{:months number :days number :micros number}`
 - **VARCHAR**, **ENUM** → `string`
 - **BLOB** → `bytes buffer`
@@ -111,6 +111,13 @@ Releases are compatible with the following versions of DuckDB:
 | <= v0.2.x       | v1.3.1           |
 
 # Changelog
+
+## v0.4.0 2026-01-11
+
+Upgrade to duckdb-v1.4.3 (Andium)
+Fix support for time with timezone.
+Rename column type `:time-tz` to `:time_tz` for consistency with the ffi.
+Rename column type `:timestampz` to `:timestamp_tz` for consistency with the ffi.
 
 ## v0.3.0 2025-09-21
 

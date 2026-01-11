@@ -235,7 +235,7 @@
 
 # Time with timezone structure
 (defcstruct duckdb_time_tz_struct
-  time duckdb_time_tz
+  time duckdb_time_struct
   offset :int32)
 
 # TIMESTAMP values are stored as microseconds since 1970-01-01
@@ -461,7 +461,7 @@
 (ffi/defbind duckdb_is_finite_date :bool [date duckdb_date])
 (ffi/defbind duckdb_from_time duckdb_time_struct [time duckdb_time])
 (ffi/defbind duckdb_create_time_tz duckdb_time_tz [micros :int64 offset :int32])
-(ffi/defbind duckdb_from_time_tz duckdb_time_tz [micros duckdb_time_tz])
+(ffi/defbind duckdb_from_time_tz duckdb_time_tz_struct [micros duckdb_time_tz])
 (ffi/defbind duckdb_to_time duckdb_time [time duckdb_time_struct])
 (ffi/defbind duckdb_from_timestamp duckdb_timestamp_struct [ts duckdb_timestamp])
 (ffi/defbind duckdb_to_timestamp duckdb_timestamp [ts duckdb_timestamp_struct])
