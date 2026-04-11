@@ -130,35 +130,44 @@
 
 ##==
 (defn janet-to-time-tz
-  "Convert a Janet date struct in seconds to a DuckDB time-tz"
+  "Convert a Janet date struct in seconds to a DuckDB time-tz. Optionally set timezone offset with
+  by strapping a :timezone-offset <seconds> to the date struct e.g. 3600 for UTC+1."
   [janet-date]
 
   (def [_ time] (janet-date-to-duckdb_date-time-tuple janet-date))
 
   (if time
     (let [[micros] (ffi/duckdb_to_time time)]
-      #janet date is in UTC. The :__tz-offset is only used to set a TZ offset for tests
-      (ffi/duckdb_create_time_tz micros (or (janet-date :__tz-offset) 0)))
+      #janet date is in UTC. The :session-timezone-offset is used to set the time's timezone offset
+      (ffi/duckdb_create_time_tz micros (or (janet-date :timezone-offset) 0)))
     (error (string/format "No time in '%q'" janet-date))))
 
 (defn janet-from-time-tz
-  "Convert a DuckDB time to a Janet date struct"
+  "Convert a DuckDB time to a Janet date struct (UTC time with session timezone context)
+  The :session-timezone-offset indicates the session timezone for display purposes."
   [duckdb-time-tz]
 
-  (let [[duckdb-time-struct tz-offset] (ffi/duckdb_from_time_tz duckdb-time-tz)
+  (let [[duckdb-time-struct session-timezone-offset] (ffi/duckdb_from_time_tz duckdb-time-tz)
         [local-micros] (ffi/duckdb_to_time duckdb-time-struct)
-        utc-micros (let [m (- local-micros (* tz-offset 1_000_000))]
-                     (if (pos? m) m (+ m (* 24 3600 1_000_000))))]
-    (janet-date-from-duckdb_date-time-tuple [nil (ffi/duckdb_from_time [utc-micros]) nil])))
+        # Convert local microseconds to UTC by subtracting the session timezone offset
+        utc-micros (- local-micros (* session-timezone-offset 1_000_000))
+        # Handle overflow (next day)
+        utc-micros (if (pos? utc-micros) utc-micros (+ utc-micros (* 24 3600 1_000_000)))
+        utc-time-struct (janet-date-from-duckdb_date-time-tuple
+                          [nil (ffi/duckdb_from_time [utc-micros]) nil])]
 
+    (merge utc-time-struct {:session-timezone-offset session-timezone-offset})))
+
+# 14:00 UTC+1 = 13:00 UTC
 (test (-> (janet-to-time-tz {:dst false :hours 14 :minutes 42 :month 5
                              :month-day 24 :seconds 20 :week-day 3 :year 2025 :year-day 175
-                             :__tz-offset 3600})
+                             :timezone-offset 3600})
           (janet-from-time-tz))
-  {:hours 13
-   :micros 0
-   :minutes 42
-   :seconds 20})
+  @{:hours 13
+    :micros 0
+    :minutes 42
+    :seconds 20
+    :session-timezone-offset 3600})
 
 ##==
 (defn janet-from-timestamp [duckdb-timestamp]
@@ -166,7 +175,7 @@
   (int/to-number (first duckdb-timestamp)))
 
 (defn janet-from-timestamp-ns [duckdb-timestamp]
-  # See ffi/duckdb_timestamp_ns, s64 can't be safely case to a double precision Janet number.
+  # See ffi/duckdb_timestamp_ns, s64 can't be safely cast to a double precision Janet number.
   (let [s64 (first duckdb-timestamp)]
     (janet-from-int64 s64)))
 

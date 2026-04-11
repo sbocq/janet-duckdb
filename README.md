@@ -107,17 +107,26 @@ Releases are compatible with the following versions of DuckDB:
 
 | Release Version | DuckDB Version   |
 |-----------------|------------------|
+| v0.5.x          | v1.5.x           |
+| v0.4.x          | v1.4.x           |
 | v0.3.x          | v1.4.x           |
 | <= v0.2.x       | v1.3.1           |
 
 # Changelog
 
+## v0.5.0 2026-04-12
+
+- Upgrade to duckdb-v1.5.1 (Variegata)
+- Return `:session-timezone-offset` info for zoned time
+- Update test to handle new column names for type casting
+- Fix test default timezone to CET
+
 ## v0.4.0 2026-01-11
 
-Upgrade to duckdb-v1.4.3 (Andium)
-Fix support for time with timezone.
-Rename column type `:time-tz` to `:time_tz` for consistency with the ffi.
-Rename column type `:timestampz` to `:timestamp_tz` for consistency with the ffi.
+- Upgrade to duckdb-v1.4.3 (Andium)
+- Fix support for time with timezone
+- Rename column type `:time-tz` to `:time_tz` for consistency with the ffi
+- Rename column type `:timestampz` to `:timestamp_tz` for consistency with the ffi
 
 ## v0.3.0 2025-09-21
 

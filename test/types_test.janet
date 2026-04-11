@@ -312,17 +312,17 @@
         `)]
     (test (result/describe-columns result :logical-type true)
       {:column-count 3
-       :column-names ["'\\xAA'::BLOB"
-                      "'\\xAA\\xAB\\xAC'::BLOB"
-                      "'AB'::BLOB"]
+       :column-names ["CAST('\\xAA' AS \"BLOB\")"
+                      "CAST('\\xAA\\xAB\\xAC' AS \"BLOB\")"
+                      "CAST('AB' AS \"BLOB\")"]
        :column-types [:blob :blob :blob]})
     (let [columns (result/fetch-columns result)]
       (test columns
         {:column @column-from-name
          :column-count 3
-         :column-names ["'\\xAA'::BLOB"
-                        "'\\xAA\\xAB\\xAC'::BLOB"
-                        "'AB'::BLOB"]
+         :column-names ["CAST('\\xAA' AS \"BLOB\")"
+                        "CAST('\\xAA\\xAB\\xAC' AS \"BLOB\")"
+                        "CAST('AB' AS \"BLOB\")"]
          :column-types [:blob :blob :blob]
          :columns @[@[[-86]] @[[-86 -85 -84]] @[[65 66]]]
          :row-count 1})
@@ -361,43 +361,58 @@
 (deftest: mem_db "time type test" [[_ conn]]
   (with [result (db/query conn `
           SELECT
+              current_setting('timezone'),
               TIME '1992-09-20 11:30:00.123456',
               TIMETZ '1992-09-20 11:30:00.123456',
               TIMETZ '1992-09-20 11:30:00.123456-02:00',
               TIMETZ '1992-09-20 11:30:00.123456+05:30'
         `)]
     (test (result/describe-columns result :logical-type true)
-      {:column-count 4
-       :column-names ["CAST('1992-09-20 11:30:00.123456' AS TIME)"
-                      "CAST('1992-09-20 11:30:00.123456' AS TIME WITH TIME ZONE)"
-                      "CAST('1992-09-20 11:30:00.123456-02:00' AS TIME WITH TIME ZONE)"
-                      "CAST('1992-09-20 11:30:00.123456+05:30' AS TIME WITH TIME ZONE)"]
-       :column-types [:time :time_tz :time_tz :time_tz]})
+      {:column-count 5
+       :column-names ["current_setting('timezone')"
+                      "CAST('1992-09-20 11:30:00.123456' AS TIME)"
+                      "CAST('1992-09-20 11:30:00.123456' AS \"TIME WITH TIME ZONE\")"
+                      "CAST('1992-09-20 11:30:00.123456-02:00' AS \"TIME WITH TIME ZONE\")"
+                      "CAST('1992-09-20 11:30:00.123456+05:30' AS \"TIME WITH TIME ZONE\")"]
+       :column-types [:varchar
+                      :time
+                      :time_tz
+                      :time_tz
+                      :time_tz]})
     (let [columns (result/fetch-columns result)]
       (test columns
         {:column @column-from-name
-         :column-count 4
-         :column-names ["CAST('1992-09-20 11:30:00.123456' AS TIME)"
-                        "CAST('1992-09-20 11:30:00.123456' AS TIME WITH TIME ZONE)"
-                        "CAST('1992-09-20 11:30:00.123456-02:00' AS TIME WITH TIME ZONE)"
-                        "CAST('1992-09-20 11:30:00.123456+05:30' AS TIME WITH TIME ZONE)"]
-         :column-types [:time :time_tz :time_tz :time_tz]
-         :columns @[@[{:hours 11
+         :column-count 5
+         :column-names ["current_setting('timezone')"
+                        "CAST('1992-09-20 11:30:00.123456' AS TIME)"
+                        "CAST('1992-09-20 11:30:00.123456' AS \"TIME WITH TIME ZONE\")"
+                        "CAST('1992-09-20 11:30:00.123456-02:00' AS \"TIME WITH TIME ZONE\")"
+                        "CAST('1992-09-20 11:30:00.123456+05:30' AS \"TIME WITH TIME ZONE\")"]
+         :column-types [:varchar
+                        :time
+                        :time_tz
+                        :time_tz
+                        :time_tz]
+         :columns @[@["CET"]
+                    @[{:hours 11
                        :micros 123456
                        :minutes 30
                        :seconds 0}]
-                    @[{:hours 10
-                       :micros 123456
-                       :minutes 30
-                       :seconds 0}]
-                    @[{:hours 12
-                       :micros 123456
-                       :minutes 30
-                       :seconds 0}]
-                    @[{:hours 5
-                       :micros 123456
-                       :minutes 0
-                       :seconds 0}]]
+                    @[@{:hours 9
+                        :micros 123456
+                        :minutes 30
+                        :seconds 0
+                        :session-timezone-offset 7200}]
+                    @[@{:hours 11
+                        :micros 123456
+                        :minutes 30
+                        :seconds 0
+                        :session-timezone-offset 7200}]
+                    @[@{:hours 4
+                        :micros 123456
+                        :minutes 0
+                        :seconds 0
+                        :session-timezone-offset 7200}]]
          :row-count 1})
 
       ))
@@ -406,6 +421,7 @@
 (deftest: mem_db "timestamp type test" [[_ conn]]
   (with [result (db/query conn `
           SELECT
+              current_setting('timezone'),
               TIMESTAMP_NS '1992-09-20 11:30:00.123456789',
               TIMESTAMP '1992-09-20 11:30:00.123456789',
               TIMESTAMP_MS '1992-09-20 11:30:00.123456789',
@@ -414,14 +430,16 @@
               TIMESTAMPTZ '1992-09-20 12:30:00.123456789+01:00'
         `)]
     (test (result/describe-columns result :logical-type true)
-      {:column-count 6
-       :column-names ["CAST('1992-09-20 11:30:00.123456789' AS TIMESTAMP_NS)"
+      {:column-count 7
+       :column-names ["current_setting('timezone')"
+                      "CAST('1992-09-20 11:30:00.123456789' AS \"TIMESTAMP_NS\")"
                       "CAST('1992-09-20 11:30:00.123456789' AS TIMESTAMP)"
-                      "CAST('1992-09-20 11:30:00.123456789' AS TIMESTAMP_MS)"
-                      "CAST('1992-09-20 11:30:00.123456789' AS TIMESTAMP_S)"
-                      "CAST('1992-09-20 11:30:00.123456789' AS TIMESTAMP WITH TIME ZONE)"
-                      "CAST('1992-09-20 12:30:00.123456789+01:00' AS TIMESTAMP WITH TIME ZONE)"]
-       :column-types [:timestamp_ns
+                      "CAST('1992-09-20 11:30:00.123456789' AS \"TIMESTAMP_MS\")"
+                      "CAST('1992-09-20 11:30:00.123456789' AS \"TIMESTAMP_S\")"
+                      "CAST('1992-09-20 11:30:00.123456789' AS \"TIMESTAMP WITH TIME ZONE\")"
+                      "CAST('1992-09-20 12:30:00.123456789+01:00' AS \"TIMESTAMP WITH TIME ZONE\")"]
+       :column-types [:varchar
+                      :timestamp_ns
                       :timestamp
                       :timestamp_ms
                       :timestamp_s
@@ -430,28 +448,31 @@
     (let [columns (result/fetch-columns result)]
       (test columns
         {:column @column-from-name
-         :column-count 6
-         :column-names ["CAST('1992-09-20 11:30:00.123456789' AS TIMESTAMP_NS)"
+         :column-count 7
+         :column-names ["current_setting('timezone')"
+                        "CAST('1992-09-20 11:30:00.123456789' AS \"TIMESTAMP_NS\")"
                         "CAST('1992-09-20 11:30:00.123456789' AS TIMESTAMP)"
-                        "CAST('1992-09-20 11:30:00.123456789' AS TIMESTAMP_MS)"
-                        "CAST('1992-09-20 11:30:00.123456789' AS TIMESTAMP_S)"
-                        "CAST('1992-09-20 11:30:00.123456789' AS TIMESTAMP WITH TIME ZONE)"
-                        "CAST('1992-09-20 12:30:00.123456789+01:00' AS TIMESTAMP WITH TIME ZONE)"]
-         :column-types [:timestamp_ns
+                        "CAST('1992-09-20 11:30:00.123456789' AS \"TIMESTAMP_MS\")"
+                        "CAST('1992-09-20 11:30:00.123456789' AS \"TIMESTAMP_S\")"
+                        "CAST('1992-09-20 11:30:00.123456789' AS \"TIMESTAMP WITH TIME ZONE\")"
+                        "CAST('1992-09-20 12:30:00.123456789+01:00' AS \"TIMESTAMP WITH TIME ZONE\")"]
+         :column-types [:varchar
+                        :timestamp_ns
                         :timestamp
                         :timestamp_ms
                         :timestamp_s
                         :timestamp_tz
                         :timestamp_tz]
-         :columns @[@["716988600123456789"]
+         :columns @[@["CET"]
+                    @["716988600123456789"]
                     @[716988600123456]
                     @[716988600123]
                     @[716988600]
                     @[716981400123456]
                     @[716988600123456]]
          :row-count 1})
-      (test (type (get-in columns [:columns 0 0])) :core/s64)
-      (test (type (get-in columns [:columns 1 0])) :number)
+      (test (type (get-in columns [:columns 0 0])) :string)
+      (test (type (get-in columns [:columns 1 0])) :core/s64)
       ))
   )
 
