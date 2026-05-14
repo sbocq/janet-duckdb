@@ -114,6 +114,10 @@ Releases are compatible with the following versions of DuckDB:
 
 # Changelog
 
+## v0.5.1 2026-05-14
+
+- Upgrade to duckdb-v1.5.2 (Variegata)
+
 ## v0.5.0 2026-04-12
 
 - Upgrade to duckdb-v1.5.1 (Variegata)
