@@ -3,7 +3,7 @@
 
 (test (with [db (db/open)]
         (db/library-version))
-  "v1.5.2")
+  "v1.5.3")
 
 (test (with [db (db/open)]
         (db/config-flags-table))
@@ -89,6 +89,7 @@
     "ducklake_retry_wait_ms" "ducklake"
     "ducklake_write_deletion_vectors" "ducklake"
     "dynamic_or_filter_threshold" "The maximum amount of OR filters we generate dynamically from a hash join"
+    "enable_caching_operators" "Enables caching operators that cache intermediate results"
     "enable_curl_server_cert_verification" "httpfs"
     "enable_external_access" "Allow the database to access external state (through e.g. loading/installing modules, COPY TO/FROM, CSV readers, pandas replacement scans, etc)"
     "enable_external_file_cache" "Allow the database to cache external files (e.g., Parquet) in memory."
@@ -127,7 +128,7 @@
     "home_directory" "Sets the home directory used by the system"
     "http_keep_alive" "httpfs"
     "http_logging_output" "(deprecated) The file to which HTTP logging output should be saved, or empty to print to the terminal"
-    "http_proxy" "HTTP proxy host"
+    "http_proxy" "HTTP proxy host (defaults to the HTTP_PROXY environment variable when unset)"
     "http_proxy_password" "Password for HTTP proxy"
     "http_proxy_username" "Username for HTTP proxy"
     "http_retries" "httpfs"
@@ -137,8 +138,11 @@
     "httpfs_client_implementation" "httpfs"
     "httpfs_connection_caching" "httpfs"
     "iceberg_test_force_token_expiry" "iceberg"
+    "iceberg_use_metadata_log" "iceberg"
     "iceberg_via_aws_sdk_for_catalog_interactions" "iceberg"
     "ieee_floating_point_ops" "Use IEE754-compliant floating point operations (returning NAN instead of errors/NULL)."
+    "ignore_row_group_size_for_partitioned_tables" "iceberg"
+    "ignore_target_file_size_for_partitioned_tables" "iceberg"
     "ignore_unknown_crs" "Ignore unknown Coordinate Reference Systems (CRS) when creating geometry types or importing geospatial data."
     "immediate_transaction_mode" "Whether transactions should be started lazily when needed, or immediately when BEGIN TRANSACTION is called"
     "index_scan_max_count" "The maximum index scan count sets a threshold for index scans. If fewer than MAX(index_scan_max_count, index_scan_percentage * total_row_count) rows match, we perform an index scan instead of a table scan."
@@ -204,7 +208,9 @@
     "pg_experimental_filter_pushdown" "postgres_scanner"
     "pg_idle_in_transaction_timeout_millis" "postgres_scanner"
     "pg_null_byte_replacement" "postgres_scanner"
+    "pg_oauth_token" "postgres_scanner"
     "pg_pages_per_task" "postgres_scanner"
+    "pg_pool_acquire_mode" "postgres_scanner"
     "pg_pool_enable_reaper_thread" "postgres_scanner"
     "pg_pool_enable_thread_local_cache" "postgres_scanner"
     "pg_pool_health_check_query" "postgres_scanner"
@@ -229,6 +235,10 @@
     "profiling_mode" "The profiling mode (STANDARD or DETAILED)"
     "profiling_output" "The file to which profile output should be saved, or empty to print to the terminal"
     "progress_bar_time" "Sets the time (in milliseconds) how long a query needs to take before we start printing a progress bar"
+    "quack_authentication_function" "quack"
+    "quack_authorization_function" "quack"
+    "quack_fetch_batch_chunks" "quack"
+    "quack_loaded_at_us" "quack"
     "s3_access_key_id" "httpfs"
     "s3_allow_recursive_globbing" "httpfs"
     "s3_endpoint" "httpfs"
@@ -272,8 +282,15 @@
     "wal_autocheckpoint" "The WAL size threshold at which to automatically trigger a checkpoint (e.g. 1GB)"
     "wal_autocheckpoint_entries" "Trigger automatic checkpoint when WAL entry count reaches or exceeds N (0 = disabled)"
     "warnings_as_errors" "Escalate all warnings to errors."
+    "whoami_hostname" "quack"
+    "whoami_meta" "quack"
+    "whoami_name" "quack"
+    "whoami_provider" "quack"
+    "whoami_region" "quack"
+    "whoami_started_at" "quack"
     "worker_threads" "The number of total threads used by the system."
     "write_buffer_row_group_count" "The amount of row groups to buffer in bulk ingestion prior to flushing them together. Reducing this setting can reduce memory consumption."
+    "write_buffer_row_group_memory_limit" "The maximum data to buffer in row groups (in bytes) to buffer prior to flushing them together. When either this limit is reached, or write_buffer_row_group_count is reached, we flush the data to disk. Defaults to 20% of memory limit divided by thread count."
     "zstd_min_string_length" "The (average) length at which to enable ZSTD compression, defaults to 4096"})
 
 (test (with [db (db/open ":memory:" {:access_mode :automatic})]) nil)
