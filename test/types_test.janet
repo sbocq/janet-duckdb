@@ -1125,7 +1125,8 @@
       {:column-count 1
        :column-names ["u"]
        :column-types [[:union
-                       {:tags {:num :int :str :varchar}}]]})
+                       {:tag-keys [:num :str]
+                        :tag-types [:int :varchar]}]]})
     (let [columns (result/fetch-columns result)]
       (test columns
         {:column @column-from-name

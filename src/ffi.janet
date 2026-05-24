@@ -485,9 +485,9 @@
 # Prepared statement functions
 (ffi/defbind duckdb_prepare duckdb_state [connection-ptr :ptr query :string out-prepared-statement-ptr-ptr :ptr])
 (ffi/defbind duckdb_destroy_prepare :void [prepared-statement-ptr-ptr :ptr])
-(ffi/defbind duckdb_prepare-error :string [prepared-statement-ptr :ptr])
+(ffi/defbind duckdb_prepare_error :string [prepared-statement-ptr :ptr])
 (ffi/defbind duckdb_nparams idx_t [prepared-statement-ptr :ptr])
-(ffi/defbind duckdb_parameter_name :string [prepared-statement-ptr :ptr index idx_t])
+(ffi/defbind duckdb_parameter_name :ptr [prepared-statement-ptr :ptr index idx_t])
 (ffi/defbind duckdb_param_type duckdb_type [prepared-statement-ptr :ptr param-idx idx_t])
 (ffi/defbind duckdb_param_logical_type :ptr [prepared-statement-ptr :ptr param-idx idx_t])
 (ffi/defbind duckdb_clear_bindings duckdb_state [prepared-statement-ptr :ptr])

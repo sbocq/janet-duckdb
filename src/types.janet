@@ -369,8 +369,8 @@
           (defer (destroy-logical-type-ptr child-type-ptr)
             (put union-types i (logical-type-from-ptr child-type-ptr))))
         {:type-key-type :complex :type-key type-key
-         :metadata {:tag-keys union-tags
-                    :tag-types union-types}})
+         :metadata {:tag-keys (slice union-tags)
+                    :tag-types (slice union-types)}})
 
       # Default
       (error (string/format "Type not supported:'%s'" type-key)))))
@@ -394,9 +394,8 @@
                    :key-types (tuple/slice (map logical-type-simplify (meta :key-types)))}
 
                   :union
-                  {:tags (struct ;(mapcat array
-                                          (meta :tag-keys)
-                                          (map logical-type-simplify (meta :tag-types))))}
+                  {:tag-keys (meta :tag-keys)
+                   :tag-types (slice (map logical-type-simplify (meta :tag-types)))}
 
                   :list
                   {:child-type (logical-type-simplify (meta :child-type))}

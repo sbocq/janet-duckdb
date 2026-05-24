@@ -106,7 +106,8 @@
                          {:dict {0 "sad" 1 "ok" 2 "happy"}
                           :internal-type-key :utinyint}]
                         [:union
-                         {:tags {:num :int :str :varchar}}]]})
+                         {:tag-keys [:num :str]
+                          :tag-types [:int :varchar]}]]})
 
       (let [columns (result/fetch-columns result)]
         (test columns

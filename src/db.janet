@@ -6,6 +6,7 @@
 
 (import ./ffi)
 (import ./result)
+(import ./types)
 (use judge)
 
 (defn library-version
@@ -116,25 +117,41 @@
 
   (result/make-result result-ptr))
 
-#TODO: Bind values...
 (defn prepare
   "Create a prepared statement object from a query. Caller is responsible to use :close method to
  destroy the prepared statement.
-A prepared statement is a parameterized query that allows you to bind parameters to it.
-* This is useful to easily supply parameters to functions and avoid SQL injection attacks.
-* This is useful to speed up queries that you will execute several times with different parameters.
-Because the query will only be parsed, bound, optimized and planned once during the prepare stage,
-rather than once per execution.
+
+The prepared statement object caches parameter metadata (:param-count, :param-names, :param-types)
+for efficient access.
 "
   [connection query]
 
   (def prepared-statement-ptr-ptr (ffi/write :ptr (ffi/write ffi/duckdb_prepared_statement [nil])))
 
   (when (= (ffi/duckdb_prepare (connection :ptr) query prepared-statement-ptr-ptr) ffi/DuckDBError)
-    (error (ffi/duckdb_prepare-error
-              (ffi/read :ptr prepared-statement-ptr-ptr))))
+    (error (ffi/duckdb_prepare_error (ffi/read :ptr prepared-statement-ptr-ptr))))
 
-  {:ptr (ffi/read :ptr prepared-statement-ptr-ptr)
+  (def prepared-ptr (ffi/read :ptr prepared-statement-ptr-ptr))
+
+  # Cache parameter metadata for efficient access
+  (def param-count (int/to-number (ffi/duckdb_nparams prepared-ptr)))
+  (def param-names (array/new param-count))
+  (def param-types (array/new param-count))
+
+  (for i 1 (inc param-count)
+    (def param-name-ptr (ffi/duckdb_parameter_name prepared-ptr i))
+    (array/push param-names (defer (ffi/duckdb_free param-name-ptr)
+                              (keyword (ffi/deref-c-string-ptr param-name-ptr))))
+
+    (def logical-type-ptr (ffi/duckdb_param_logical_type prepared-ptr i))
+    (defer (types/destroy-logical-type-ptr logical-type-ptr)
+      (array/push param-types (-> (types/logical-type-from-ptr logical-type-ptr)
+                                  (types/logical-type-simplify)))))
+
+  {:ptr prepared-ptr
+   :param-count param-count
+   :param-names (tuple/slice param-names)
+   :param-types (tuple/slice param-types)
    :close (fn [self] (ffi/duckdb_destroy_prepare prepared-statement-ptr-ptr))})
 
 (defn execute-prepared
@@ -151,3 +168,12 @@ between calls to this function.
     (error (ffi/duckdb_result_error result-ptr)))
 
   (result/make-result result-ptr))
+
+#==------------------------------------------------------------------------==#
+# Prepared Statement Util Functions
+#==------------------------------------------------------------------------==#
+
+(defn prepared-clear-bindings
+  "Clear all parameter bindings from a prepared statement."
+  [prepared-statement]
+  (ffi/duckdb_clear_bindings (prepared-statement :ptr)))
