@@ -54,47 +54,59 @@
       (test (result/return-type result) :DUCKDB_RESULT_TYPE_QUERY_RESULT)
       (test (result/rows-changed result) 0)
       (test (result/describe-columns result :logical-type true)
-            {:column-count 19
-             :column-names ["id"
-                            "name"
-                            "float"
-                            "double"
-                            "int32"
-                            "int64"
-                            "decimal"
-                            "blob"
-                            "date"
-                            "time"
-                            "timestamp"
-                            "interval"
-                            "list"
-                            "arr"
-                            "struct"
-                            "array_of_struct"
-                            "map"
-                            "enum"
-                            "u"]
-             :column-types [:int
-                            :varchar
-                            :float
-                            :double
-                            :int
-                            :bigint
-                            :decimal
-                            :blob
-                            :date
-                            :time
-                            :timestamp_s
-                            :interval
-                            [:list :int]
-                            [:array [:int 3]]
-                            [:struct {"col1" :int "col2" :varchar}]
-                            [:array
-                             [[:struct {"col1" :int "col2" :varchar}]
-                              2]]
-                            [:map {:int :decimal}]
-                            [:enum {:members ["sad" "ok" "happy"]}]
-                            [:union {:num :int :str :varchar}]]})
+        {:column-count 19
+         :column-names ["id"
+                        "name"
+                        "float"
+                        "double"
+                        "int32"
+                        "int64"
+                        "decimal"
+                        "blob"
+                        "date"
+                        "time"
+                        "timestamp"
+                        "interval"
+                        "list"
+                        "arr"
+                        "struct"
+                        "array_of_struct"
+                        "map"
+                        "enum"
+                        "u"]
+         :column-types [:int
+                        :varchar
+                        :float
+                        :double
+                        :int
+                        :bigint
+                        [:decimal
+                         {:internal-type-key :int :scale 3}]
+                        :blob
+                        :date
+                        :time
+                        :timestamp_s
+                        :interval
+                        [:list {:child-type :int}]
+                        [:array
+                         {:array-size 3 :child-type :int}]
+                        [:struct
+                         {:key-types [:int :varchar]
+                          :keys [:col1 :col2]}]
+                        [:array
+                         {:array-size 2
+                          :child-type [:struct
+                                       {:key-types [:int :varchar]
+                                        :keys [:col1 :col2]}]}]
+                        [:map
+                         {:key-type :int
+                          :val-type [:decimal
+                                     {:internal-type-key :bigint :scale 3}]}]
+                        [:enum
+                         {:dict {0 "sad" 1 "ok" 2 "happy"}
+                          :internal-type-key :utinyint}]
+                        [:union
+                         {:tags {:num :int :str :varchar}}]]})
 
       (let [columns (result/fetch-columns result)]
         (test columns

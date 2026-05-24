@@ -21,111 +21,211 @@
            :column-types [:bigint
                           :bool
                           [:list
-                           [:struct
-                            {"allow_forking" :bool
-                             "archive_url" :varchar
-                             "archived" :bool
-                             "assignees_url" :varchar
-                             "blobs_url" :varchar
-                             "branches_url" :varchar
-                             "clone_url" :varchar
-                             "collaborators_url" :varchar
-                             "comments_url" :varchar
-                             "commits_url" :varchar
-                             "compare_url" :varchar
-                             "contents_url" :varchar
-                             "contributors_url" :varchar
-                             "created_at" :timestamp
-                             "default_branch" :varchar
-                             "deployments_url" :varchar
-                             "description" :varchar
-                             "disabled" :bool
-                             "downloads_url" :varchar
-                             "events_url" :varchar
-                             "fork" :bool
-                             "forks" :bigint
-                             "forks_count" :bigint
-                             "forks_url" :varchar
-                             "full_name" :varchar
-                             "git_commits_url" :varchar
-                             "git_refs_url" :varchar
-                             "git_tags_url" :varchar
-                             "git_url" :varchar
-                             "has_discussions" :bool
-                             "has_downloads" :bool
-                             "has_issues" :bool
-                             "has_pages" :bool
-                             "has_projects" :bool
-                             "has_wiki" :bool
-                             "homepage" :varchar
-                             "hooks_url" :varchar
-                             "html_url" :varchar
-                             "id" :bigint
-                             "is_template" :bool
-                             "issue_comment_url" :varchar
-                             "issue_events_url" :varchar
-                             "issues_url" :varchar
-                             "keys_url" :varchar
-                             "labels_url" :varchar
-                             "language" :varchar
-                             "languages_url" :varchar
-                             "license" [:struct
-                                        {"key" :varchar
-                                         "name" :varchar
-                                         "node_id" :varchar
-                                         "spdx_id" :varchar
-                                         "url" :varchar}]
-                             "merges_url" :varchar
-                             "milestones_url" :varchar
-                             "mirror_url" :varchar
-                             "name" :varchar
-                             "node_id" :varchar
-                             "notifications_url" :varchar
-                             "open_issues" :bigint
-                             "open_issues_count" :bigint
-                             "owner" [:struct
-                                      {"avatar_url" :varchar
-                                       "events_url" :varchar
-                                       "followers_url" :varchar
-                                       "following_url" :varchar
-                                       "gists_url" :varchar
-                                       "gravatar_id" :varchar
-                                       "html_url" :varchar
-                                       "id" :bigint
-                                       "login" :varchar
-                                       "node_id" :varchar
-                                       "organizations_url" :varchar
-                                       "received_events_url" :varchar
-                                       "repos_url" :varchar
-                                       "site_admin" :bool
-                                       "starred_url" :varchar
-                                       "subscriptions_url" :varchar
-                                       "type" :varchar
-                                       "url" :varchar
-                                       "user_view_type" :varchar}]
-                             "private" :bool
-                             "pulls_url" :varchar
-                             "pushed_at" :timestamp
-                             "releases_url" :varchar
-                             "score" :double
-                             "size" :bigint
-                             "ssh_url" :varchar
-                             "stargazers_count" :bigint
-                             "stargazers_url" :varchar
-                             "statuses_url" :varchar
-                             "subscribers_url" :varchar
-                             "subscription_url" :varchar
-                             "svn_url" :varchar
-                             "tags_url" :varchar
-                             "teams_url" :varchar
-                             "topics" [:list :varchar]
-                             "trees_url" :varchar
-                             "updated_at" :timestamp
-                             "url" :varchar
-                             "visibility" :varchar
-                             "watchers" :bigint
-                             "watchers_count" :bigint
-                             "web_commit_signoff_required" :bool}]]]})
+                           {:child-type [:struct
+                                         {:key-types [:bigint
+                                                      :varchar
+                                                      :varchar
+                                                      :varchar
+                                                      :bool
+                                                      [:struct
+                                                       {:key-types [:varchar
+                                                                    :bigint
+                                                                    :varchar
+                                                                    :varchar
+                                                                    :varchar
+                                                                    :varchar
+                                                                    :varchar
+                                                                    :varchar
+                                                                    :varchar
+                                                                    :varchar
+                                                                    :varchar
+                                                                    :varchar
+                                                                    :varchar
+                                                                    :varchar
+                                                                    :varchar
+                                                                    :varchar
+                                                                    :varchar
+                                                                    :varchar
+                                                                    :bool]
+                                                        :keys [:login
+                                                               :id
+                                                               :node_id
+                                                               :avatar_url
+                                                               :gravatar_id
+                                                               :url
+                                                               :html_url
+                                                               :followers_url
+                                                               :following_url
+                                                               :gists_url
+                                                               :starred_url
+                                                               :subscriptions_url
+                                                               :organizations_url
+                                                               :repos_url
+                                                               :events_url
+                                                               :received_events_url
+                                                               :type
+                                                               :user_view_type
+                                                               :site_admin]}]
+                                                      :varchar
+                                                      :varchar
+                                                      :bool
+                                                      :varchar
+                                                      :varchar
+                                                      :varchar
+                                                      :varchar
+                                                      :varchar
+                                                      :varchar
+                                                      :varchar
+                                                      :varchar
+                                                      :varchar
+                                                      :varchar
+                                                      :varchar
+                                                      :varchar
+                                                      :varchar
+                                                      :varchar
+                                                      :varchar
+                                                      :varchar
+                                                      :varchar
+                                                      :varchar
+                                                      :varchar
+                                                      :varchar
+                                                      :varchar
+                                                      :varchar
+                                                      :varchar
+                                                      :varchar
+                                                      :varchar
+                                                      :varchar
+                                                      :varchar
+                                                      :varchar
+                                                      :varchar
+                                                      :varchar
+                                                      :varchar
+                                                      :varchar
+                                                      :varchar
+                                                      :varchar
+                                                      :varchar
+                                                      :varchar
+                                                      :varchar
+                                                      :timestamp
+                                                      :timestamp
+                                                      :timestamp
+                                                      :varchar
+                                                      :varchar
+                                                      :varchar
+                                                      :varchar
+                                                      :varchar
+                                                      :bigint
+                                                      :bigint
+                                                      :bigint
+                                                      :varchar
+                                                      :bool
+                                                      :bool
+                                                      :bool
+                                                      :bool
+                                                      :bool
+                                                      :bool
+                                                      :bigint
+                                                      :varchar
+                                                      :bool
+                                                      :bool
+                                                      :bigint
+                                                      [:struct
+                                                       {:key-types [:varchar
+                                                                    :varchar
+                                                                    :varchar
+                                                                    :varchar
+                                                                    :varchar]
+                                                        :keys [:key :name :spdx_id :url :node_id]}]
+                                                      :bool
+                                                      :bool
+                                                      :bool
+                                                      [:list {:child-type :varchar}]
+                                                      :varchar
+                                                      :bigint
+                                                      :bigint
+                                                      :bigint
+                                                      :varchar
+                                                      :double]
+                                          :keys [:id
+                                                 :node_id
+                                                 :name
+                                                 :full_name
+                                                 :private
+                                                 :owner
+                                                 :html_url
+                                                 :description
+                                                 :fork
+                                                 :url
+                                                 :forks_url
+                                                 :keys_url
+                                                 :collaborators_url
+                                                 :teams_url
+                                                 :hooks_url
+                                                 :issue_events_url
+                                                 :events_url
+                                                 :assignees_url
+                                                 :branches_url
+                                                 :tags_url
+                                                 :blobs_url
+                                                 :git_tags_url
+                                                 :git_refs_url
+                                                 :trees_url
+                                                 :statuses_url
+                                                 :languages_url
+                                                 :stargazers_url
+                                                 :contributors_url
+                                                 :subscribers_url
+                                                 :subscription_url
+                                                 :commits_url
+                                                 :git_commits_url
+                                                 :comments_url
+                                                 :issue_comment_url
+                                                 :contents_url
+                                                 :compare_url
+                                                 :merges_url
+                                                 :archive_url
+                                                 :downloads_url
+                                                 :issues_url
+                                                 :pulls_url
+                                                 :milestones_url
+                                                 :notifications_url
+                                                 :labels_url
+                                                 :releases_url
+                                                 :deployments_url
+                                                 :created_at
+                                                 :updated_at
+                                                 :pushed_at
+                                                 :git_url
+                                                 :ssh_url
+                                                 :clone_url
+                                                 :svn_url
+                                                 :homepage
+                                                 :size
+                                                 :stargazers_count
+                                                 :watchers_count
+                                                 :language
+                                                 :has_issues
+                                                 :has_projects
+                                                 :has_downloads
+                                                 :has_wiki
+                                                 :has_pages
+                                                 :has_discussions
+                                                 :forks_count
+                                                 :mirror_url
+                                                 :archived
+                                                 :disabled
+                                                 :open_issues_count
+                                                 :license
+                                                 :allow_forking
+                                                 :is_template
+                                                 :web_commit_signoff_required
+                                                 :topics
+                                                 :visibility
+                                                 :forks
+                                                 :open_issues
+                                                 :watchers
+                                                 :default_branch
+                                                 :score]}]}]]})
 
         (let [columns (result/fetch-columns result)]
           (test columns

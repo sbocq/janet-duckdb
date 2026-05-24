@@ -20,9 +20,8 @@
   # info is cheap and useful for debugging.
   (loop [i :range [0 column-count]]
     (array/push column-names (ffi/duckdb_column_name result-ptr i))
-    (array/push column-types ((-> (ffi/duckdb_column_type result-ptr i)
-                                  (types/type-id-spec))
-                               :type-key)))
+    (array/push column-types (-> (ffi/duckdb_column_type result-ptr i)
+                                 (types/type-id-to-key))))
 
   (var valid true)
 
@@ -76,11 +75,13 @@
   {:column-count column-count
    :column-names column-names
    :column-types (if logical-type
-                   (tuple/slice (let [result-ptr (result :ptr)]
-                                  (seq [i :range [0 column-count]]
-                                    (def logical-type-ptr (ffi/duckdb_column_logical_type result-ptr i))
-                                    (defer (types/destroy-logical-type logical-type-ptr)
-                                      (types/logical-type-spec logical-type-ptr)))))
+                   (-> (let [result-ptr (result :ptr)]
+                         (seq [i :range [0 column-count]]
+                           (def logical-type-ptr (ffi/duckdb_column_logical_type result-ptr i))
+                           (defer (types/destroy-logical-type-ptr logical-type-ptr)
+                             (-> (types/logical-type-from-ptr logical-type-ptr)
+                                 (types/logical-type-simplify)))))
+                       (tuple/slice))
                    column-types)})
 
 (defn- make-columns-result [column-count column-names column-types columns row-count]

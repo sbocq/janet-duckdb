@@ -116,7 +116,8 @@
                       :double
                       :int
                       :bigint
-                      :decimal]})
+                      [:decimal
+                       {:internal-type-key :int :scale 3}]]})
     (let [columns (result/fetch-columns result)]
       (test columns
         {:column @column-from-name
@@ -680,7 +681,7 @@
     (test (result/describe-columns result :logical-type true)
       {:column-count 1
        :column-names ["l"]
-       :column-types [[:list :bigint]]})
+       :column-types [[:list {:child-type :bigint}]]})
     (let [columns (result/fetch-columns result)]
       (test columns
         {:column @column-from-name
@@ -756,7 +757,8 @@
     (test (result/describe-columns result :logical-type true)
       {:column-count 1
        :column-names ["col0"]
-       :column-types [[:array [:int 3]]]})
+       :column-types [[:array
+                       {:array-size 3 :child-type :int}]]})
     (let [columns (result/fetch-columns result)]
       (test columns
         {:column @column-from-name
@@ -789,7 +791,8 @@
       {:column-count 1
        :column-names ["s"]
        :column-types [[:struct
-                       {"col1" :bigint "col2" :bigint}]]})
+                       {:key-types [:bigint :bigint]
+                        :keys [:col1 :col2]}]]})
     (let [columns (result/fetch-columns result)]
       (test columns
         {:column @column-from-name
@@ -867,9 +870,8 @@
       {:column-count 1
        :column-names ["col0"]
        :column-types [[:struct
-                       {"col1" :int
-                        "col2" :varchar
-                        "col3" :int}]]})
+                       {:key-types [:int :varchar :int]
+                        :keys [:col1 :col2 :col3]}]]})
     (let [columns (result/fetch-columns result)]
       (test columns
         {:column @column-from-name
@@ -918,11 +920,10 @@
       {:column-count 1
        :column-names ["col0"]
        :column-types [[:array
-                       [[:struct
-                         {"col1" :int
-                          "col2" :varchar
-                          "col3" :int}]
-                        2]]]})
+                       {:array-size 2
+                        :child-type [:struct
+                                     {:key-types [:int :varchar :int]
+                                      :keys [:col1 :col2 :col3]}]}]]})
     (let [columns (result/fetch-columns result)]
       (test columns
         {:column @column-from-name
@@ -970,7 +971,9 @@
       {:column-count 1
        :column-names ["col0"]
        :column-types [[:list
-                       [:struct {"key" :int "value" :int}]]]})
+                       {:child-type [:struct
+                                     {:key-types [:int :int]
+                                      :keys [:key :value]}]}]]})
     (let [columns (result/fetch-columns result)]
       (test columns
         {:column @column-from-name
@@ -1011,7 +1014,10 @@
     (test (result/describe-columns result :logical-type true)
       {:column-count 1
        :column-names ["col0"]
-       :column-types [[:map {:int :decimal}]]})
+       :column-types [[:map
+                       {:key-type :int
+                        :val-type [:decimal
+                                   {:internal-type-key :int :scale 3}]}]]})
     (let [columns (result/fetch-columns result)]
       (test columns
         {:column @column-from-name
@@ -1063,7 +1069,9 @@
       {:column-count 2
        :column-names ["name" "mood"]
        :column-types [:varchar
-                      [:enum {:members ["sad" "ok" "happy"]}]]})
+                      [:enum
+                       {:dict {0 "sad" 1 "ok" 2 "happy"}
+                        :internal-type-key :utinyint}]]})
     (let [columns (result/fetch-columns result)]
       (test columns
         {:column @column-from-name
@@ -1116,7 +1124,8 @@
     (test (result/describe-columns result :logical-type true)
       {:column-count 1
        :column-names ["u"]
-       :column-types [[:union {:num :int :str :varchar}]]})
+       :column-types [[:union
+                       {:tags {:num :int :str :varchar}}]]})
     (let [columns (result/fetch-columns result)]
       (test columns
         {:column @column-from-name
