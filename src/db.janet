@@ -5,6 +5,7 @@
 #==----------------------------------------------------------------------------------------------==#
 
 (import ./ffi)
+(import ./prepare)
 (import ./result)
 (import ./types)
 (use judge)
@@ -155,11 +156,30 @@ for efficient access.
    :close (fn [self] (ffi/duckdb_destroy_prepare prepared-statement-ptr-ptr))})
 
 (defn execute-prepared
-  "Executes the prepared statement with the given bound parameters, and returns a materialized query result.
-This method can be called multiple times for each prepared statement, and the parameters can be modified
-between calls to this function.
-   Caller is responsible to use :close method to destroy the result."
-  [prepared-statement]
+  "Execute a prepared statement. If params are provided, bind them first.
+
+   Positional parameters:
+     (db/execute-prepared stmt [1 \"Alice\"])
+
+   Named parameters:
+     (db/execute-prepared stmt {:id 1 :name \"Alice\"})
+
+   No parameters:
+     (db/execute-prepared stmt)
+  "
+  [prepared-statement &opt params]
+  (default params [])
+
+  (cond
+    (indexed? params)
+    (eachp [i v] params
+      (prepare/bind prepared-statement (inc i) v))
+
+    (dictionary? params)
+    (eachp [k v] params
+      (prepare/bind-named prepared-statement (string k) v))
+
+    (error (string/format "params must be an array/tuple or struct/table, got %T" params)))
 
   (def result-ptr (ffi/write ffi/duckdb_result [0 0 0 nil nil nil]))
 
