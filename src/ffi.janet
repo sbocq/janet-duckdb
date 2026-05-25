@@ -567,6 +567,18 @@
 (ffi/defbind duckdb_create_interval :ptr [input duckdb_interval])
 (ffi/defbind duckdb_create_null :ptr [])
 (ffi/defbind duckdb_create_decimal :ptr [input duckdb_decimal_t])
+(ffi/defbind duckdb_create_null_value :ptr [])
+(ffi/defbind duckdb_create_struct_value :ptr [type duckdb_logical_type values :ptr])
+(ffi/defbind duckdb_create_list_value :ptr [type duckdb_logical_type values :ptr value-count idx_t])
+(ffi/defbind duckdb_create_array_value :ptr [type duckdb_logical_type values :ptr value-count idx_t])
+(ffi/defbind duckdb_create_map_value :ptr [map-type duckdb_logical_type keys :ptr values :ptr entry-count idx_t])
+(ffi/defbind duckdb_create_union_value :ptr [union-type duckdb_logical_type tag-index idx_t value :ptr])
+(ffi/defbind duckdb_create_time_tz_value :ptr [input duckdb_time_tz])
+(ffi/defbind duckdb_create_timestamp_tz :ptr [input duckdb_timestamp])
+(ffi/defbind duckdb_create_timestamp_s :ptr [input duckdb_timestamp_s])
+(ffi/defbind duckdb_create_timestamp_ms :ptr [input duckdb_timestamp_ms])
+(ffi/defbind duckdb_create_timestamp_ns :ptr [input duckdb_timestamp_ns])
+(ffi/defbind duckdb_create_enum_value :ptr [type duckdb_logical_type value :uint64])
 
 # Value extraction functions
 (ffi/defbind duckdb_get_varchar :string [value-ptr :ptr])
@@ -593,6 +605,11 @@
 (ffi/defbind duckdb_get_timestamp duckdb_timestamp [value-ptr :ptr])
 (ffi/defbind duckdb_get_interval duckdb_interval [value-ptr :ptr])
 (ffi/defbind duckdb_get_decimal duckdb_decimal_t [value-ptr :ptr])
+(ffi/defbind duckdb_get_time_tz duckdb_time_tz [value-ptr :ptr])
+(ffi/defbind duckdb_get_timestamp_tz duckdb_timestamp [value-ptr :ptr])
+(ffi/defbind duckdb_get_timestamp_s duckdb_timestamp_s [value-ptr :ptr])
+(ffi/defbind duckdb_get_timestamp_ms duckdb_timestamp_ms [value-ptr :ptr])
+(ffi/defbind duckdb_get_timestamp_ns duckdb_timestamp_ns [value-ptr :ptr])
 
 # Logical type functions
 (ffi/defbind duckdb_create_logical_type :ptr [type duckdb_type])

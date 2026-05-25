@@ -184,6 +184,114 @@
   {:months months :days days :micros (janet-from-int64 micros)})
 
 #==------------------------------------------------------------------------==#
+# Reverse Conversion Helpers (Janet -> DuckDB value for binding)
+#==------------------------------------------------------------------------==#
+
+(defn janet-to-interval
+  "Convert a Janet interval struct to a duckdb_value."
+  [{:months months :days days :micros micros}]
+  (ffi/duckdb_create_interval [months days micros]))
+
+(test (let [v (janet-to-interval {:months 1 :days 2 :micros 3000000})
+            duckdb-interval (ffi/duckdb_get_interval v)]
+        (ffi/duckdb_destroy_value (ffi/write :ptr v))
+        (janet-from-interval duckdb-interval))
+  {:months 1 :days 2 :micros 3000000})
+
+(defn janet-to-timestamp
+  "Convert a Janet number (epoch microseconds) to a duckdb_value."
+  [epoch-micros]
+  (ffi/duckdb_create_timestamp [epoch-micros]))
+
+(test (let [v (janet-to-timestamp 1705305600000000)
+            duckdb-ts (ffi/duckdb_get_timestamp v)]
+        (ffi/duckdb_destroy_value (ffi/write :ptr v))
+        (janet-from-timestamp duckdb-ts))
+  1705305600000000)
+
+(defn janet-to-date-value
+  "Convert a Janet date struct to a duckdb_value."
+  [janet-date]
+  (ffi/duckdb_create_date (janet-to-date janet-date)))
+
+(test (let [v (janet-to-date-value {:year 2025 :month 0 :month-day 15})
+            duckdb-date (ffi/duckdb_get_date v)]
+        (ffi/duckdb_destroy_value (ffi/write :ptr v))
+        (janet-from-date duckdb-date))
+  {:month 0 :month-day 15 :year 2025})
+
+(defn janet-to-time-value
+  "Convert a Janet time struct to a duckdb_value."
+  [janet-time]
+  (ffi/duckdb_create_time (janet-to-time janet-time)))
+
+(test (let [v (janet-to-time-value {:hours 14 :minutes 42 :seconds 20 :micros 0})
+            duckdb-time (ffi/duckdb_get_time v)]
+        (ffi/duckdb_destroy_value (ffi/write :ptr v))
+        (janet-from-time duckdb-time))
+  {:hours 14 :minutes 42 :seconds 20 :micros 0})
+(defn janet-to-time-tz-value
+  "Convert a Janet time-tz struct to a duckdb_value."
+  [janet-date]
+  (ffi/duckdb_create_time_tz_value (janet-to-time-tz janet-date)))
+
+(test (let [v (janet-to-time-tz-value {:hours 14 :minutes 42 :seconds 20 :micros 0
+                                        :timezone-offset 3600})
+            duckdb-ttz (ffi/duckdb_get_time_tz v)]
+        (ffi/duckdb_destroy_value (ffi/write :ptr v))
+        (janet-from-time-tz duckdb-ttz))
+  @{:hours 13
+    :minutes 42
+    :seconds 20
+    :micros 0
+    :session-timezone-offset 3600})
+
+(defn janet-to-timestamp-tz
+  "Convert a Janet number (epoch microseconds) to a duckdb_value as TIMESTAMP_TZ."
+  [epoch-micros]
+  (ffi/duckdb_create_timestamp_tz [epoch-micros]))
+
+(test (let [v (janet-to-timestamp-tz 1705305600000000)
+            duckdb-ts (ffi/duckdb_get_timestamp_tz v)]
+        (ffi/duckdb_destroy_value (ffi/write :ptr v))
+        (janet-from-timestamp duckdb-ts))
+  1705305600000000)
+
+(defn janet-to-timestamp-s
+  "Convert a Janet number (epoch seconds) to a duckdb_value as TIMESTAMP_S."
+  [epoch-seconds]
+  (ffi/duckdb_create_timestamp_s [epoch-seconds]))
+
+(test (let [v (janet-to-timestamp-s 1705305600)
+            duckdb-ts (ffi/duckdb_get_timestamp_s v)]
+        (ffi/duckdb_destroy_value (ffi/write :ptr v))
+        (janet-from-timestamp duckdb-ts))
+  1705305600)
+
+(defn janet-to-timestamp-ms
+  "Convert a Janet number (epoch milliseconds) to a duckdb_value as TIMESTAMP_MS."
+  [epoch-millis]
+  (ffi/duckdb_create_timestamp_ms [epoch-millis]))
+
+(test (let [v (janet-to-timestamp-ms 1705305600000)
+            duckdb-ts (ffi/duckdb_get_timestamp_ms v)]
+        (ffi/duckdb_destroy_value (ffi/write :ptr v))
+        (janet-from-timestamp duckdb-ts))
+  1705305600000)
+
+(defn janet-to-timestamp-ns
+  "Convert a Janet number (epoch nanoseconds) to a duckdb_value as TIMESTAMP_NS."
+  [epoch-nanos]
+  (ffi/duckdb_create_timestamp_ns [epoch-nanos]))
+
+(test (let [v (janet-to-timestamp-ns 1000)
+            duckdb-ts (ffi/duckdb_get_timestamp_ns v)]
+        (ffi/duckdb_destroy_value (ffi/write :ptr v))
+        (janet-from-int64 (first duckdb-ts)))
+  1000)
+
+#==------------------------------------------------------------------------==#
+
 # Decimal Type Conversions
 #==------------------------------------------------------------------------==#
 
