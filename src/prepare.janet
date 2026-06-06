@@ -37,9 +37,9 @@
       :blob (ffi/duckdb_create_varchar janet-value)
       :date (types/janet-to-date-value janet-value)
       :time (types/janet-to-time-value janet-value)
-      :timestamp (types/janet-to-timestamp janet-value)
-      :interval (types/janet-to-interval janet-value)
-      (error (string/format "Unsupported simple type for value creation: %s" simplified-type)))
+      :timestamp (types/janet-to-timestamp-value janet-value)
+      :interval (types/janet-to-interval-value janet-value)
+      (error (string/format "unsupported simple type for value creation: %q" simplified-type)))
 
     (tuple? simplified-type)
     (let [[type-key meta] simplified-type]
@@ -108,7 +108,7 @@
         (let [child-type (meta :child-type)
               expected-size (meta :array-size)]
           (when (not= (length janet-value) expected-size)
-            (error (string/format "Array requires %d elements, got %d"
+            (error (string/format "array requires %d elements, got %d"
                                   expected-size (length janet-value))))
           (def child-type-ptr (ffi/duckdb_array_type_child_type logical-type-ptr))
           (defer (types/destroy-logical-type-ptr child-type-ptr)
@@ -126,14 +126,14 @@
               [tag value] janet-value
               tag-idx (index-of tag tag-keys)]
           (when (nil? tag-idx)
-            (error (string/format "Union tag %s not found" tag)))
+            (error (string/format "union tag %q not found" tag)))
           (def member-type (tag-types tag-idx))
           (def member-type-ptr (ffi/duckdb_union_type_member_type logical-type-ptr tag-idx))
           (defer (types/destroy-logical-type-ptr member-type-ptr)
             (def duckdb-val (janet-to-duckdb-value value member-type member-type-ptr))
             (ffi/duckdb_create_union_value logical-type-ptr tag-idx duckdb-val)))
 
-        (error (string/format "Unsupported complex type: %s" type-key))))))
+        (error (string/format "unsupported complex type: %q" type-key))))))
 
 (defn bind
   "Bind a Janet value to a prepared statement parameter by index (1-based)."
@@ -143,20 +143,20 @@
   (def param-count (prepared-statement :param-count))
 
   (unless (and (pos? param-idx) (< param-idx (inc param-count)))
-    (error (string/format "Parameter index %d out of range (statement has %d params)"
+    (error (string/format "parameter index %d out of range (statement has %d params)"
                           param-idx param-count)))
 
   (def cached-type ((prepared-statement :param-types) (dec param-idx)))
 
   (if (nil? janet-value)
     (when (= (ffi/duckdb_bind_null prepared-ptr param-idx) ffi/DuckDBError)
-      (error (string/format "Failed to bind NULL to parameter %d" param-idx)))
+      (error (string/format "failed to bind NULL to parameter %d" param-idx)))
     (let [logical-type-ptr (ffi/duckdb_param_logical_type prepared-ptr param-idx)]
       (defer (types/destroy-logical-type-ptr logical-type-ptr)
         (def duckdb-value (janet-to-duckdb-value janet-value cached-type logical-type-ptr))
         (defer (ffi/duckdb_destroy_value (ffi/write :ptr duckdb-value))
           (when (= (ffi/duckdb_bind_value prepared-ptr param-idx duckdb-value) ffi/DuckDBError)
-            (error (string/format "Failed to bind parameter %d" param-idx))))))))
+            (error (string/format "failed to bind parameter %d" param-idx))))))))
 
 (defn bind-named
   "Bind a Janet value to a prepared statement parameter by name."
@@ -164,5 +164,5 @@
   (def param-idx-ptr (ffi/write ffi/idx_t 0))
   (when (= (ffi/duckdb_bind_parameter_index (prepared-statement :ptr) param-idx-ptr (string param-name))
            ffi/DuckDBError)
-    (error (string/format "Parameter '%s' not found" param-name)))
+    (error (string/format "parameter %q not found" param-name)))
   (bind prepared-statement (int/to-number (ffi/read ffi/idx_t param-idx-ptr)) janet-value))

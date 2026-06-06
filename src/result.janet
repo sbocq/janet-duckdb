@@ -11,7 +11,10 @@
 # Result Functions
 #==------------------------------------------------------------------------==#
 
-(defn make-result [result-ptr]
+(defn make-result
+  "Create a result object from a DuckDB result pointer.
+  Free with :close."
+  [result-ptr]
   (def column-count (int/to-number (ffi/duckdb_column_count result-ptr)))
   (def column-names (array/new column-count))
   (def column-types (array/new column-count))
@@ -209,7 +212,7 @@
         (array/push row (column row-idx)))
       (array/push rows row))
 
-    (error (string/format "coll-type must be one of :table :struct :tuple :array, got `%q`"
+    (error (string/format "coll-type must be one of :table :struct :tuple :array, got %q"
                           coll-type)))
 
   rows)

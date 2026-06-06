@@ -11,8 +11,13 @@
 
 (declare-source
   :prefix "duckdb"
+  :source ["src/init.janet"])
+
+(declare-source
+  :prefix "duckdb"
   :source
   ["src/db.janet"
    "src/ffi.janet"
    "src/result.janet"
-   "src/types.janet"])
+   "src/types.janet"
+   "src/prepare.janet"])

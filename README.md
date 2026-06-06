@@ -23,7 +23,7 @@ export LD_LIBRARY_PATH=/path/to/libduckdb:$LD_LIBRARY_PATH
 2. Export the path if needed:
 
 ```bash
-export DYLD_FALLBACK_LIBRARY_PATH=/path/to/libduckdb;$DYLD_FALLBACK_LIBRARY_PATH
+export DYLD_FALLBACK_LIBRARY_PATH=/path/to/libduckdb:$DYLD_FALLBACK_LIBRARY_PATH
 ```
 
 Then install the Janet module using jpm:
@@ -46,21 +46,36 @@ Then fetch the dependencies:
 jpm -l deps
 ```
 
-## Usage
-
-Assuming you've added `janet-duckdb` as a dependency and run `jpm -l deps`:
+## Quick Start
 
 ```janet
-(import duckdb/db :as db)
+(import duckdb)
 
-(with [db (db/open)]
-  (pp (db/library-version)))
+(with [db (duckdb/db/open)]
+  (with [conn (duckdb/db/connect db)]
+    (with [result (duckdb/db/query conn "SELECT 'Hello, DuckDB!' AS greeting")]
+      (def cols (duckdb/result/fetch-columns result))
+      (printf "Result: %s" (((cols :columns) 0) 0))))))
 ```
 
 ```bash
-❯ jpm -l janet test.janet
-"v1.4.3"
+❯ jpm -l janet examples/quickstart.janet
+Result: Hello, DuckDB!
 ```
+
+## Examples
+
+Try these verified examples:
+
+```bash
+jpm -l janet examples/quickstart.janet
+jpm -l janet examples/result-processing.janet
+jpm -l janet examples/prepared-demo.janet
+```
+
+- **quickstart.janet** — Open a database, run a query, print results
+- **result-processing.janet** — Column-oriented and row-oriented result access
+- **prepared-demo.janet** — Positional and named parameter binding
 
 ## Status
 
@@ -96,7 +111,6 @@ Most DuckDB types are supported out of the box. See `test/types_test.janet` for 
 
 - Support for more native types (e.g. UUID, BIT)
 - Lispy REPL-friendly query DSL (using `:memory:` as default) (TBD)
-- Support for prepared statements
 - Bug fixes (of course)
 - More hacking
 - And then more bug fixes I guess (TBD)

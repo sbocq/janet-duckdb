@@ -18,7 +18,7 @@
 #==------------------------------------------------------------------------==#
 # Configuration Functions
 #==------------------------------------------------------------------------==#
-(defn dbg [x] (pp [x (type x)]) x)
+(defn- dbg [x] (pp [x (type x)]) x)
 
 (defn config-flags-table
   "Get a table of all available configuration flags and their descriptions"
@@ -50,9 +50,9 @@
 # Database Management Functions
 #==------------------------------------------------------------------------==#
 
-(defn open "Open a DuckDB database. Accepts an optional `path` and `config` map e.g.  {:access_mode
-  :READ_ONLY}. Deafults to \":memory:\" id path is not sepcified. The caller is responsible to use
-  :close method to close the DB."
+(defn open "Open a DuckDB database. Accepts an optional `path` and `config` map, e.g.
+  {:access_mode :READ_ONLY}. Defaults to \":memory:\" if path is not specified.
+  Free with :close."
   [&opt path config-map]
 
   (default path ":memory:")
@@ -60,14 +60,14 @@
 
   (def config-ptr-ptr (ffi/write :ptr (ffi/write ffi/duckdb_config [nil])))
   (when (= (ffi/duckdb_create_config config-ptr-ptr) ffi/DuckDBError)
-    (error "Failed to allocate fresh duckdb config"))
+    (error "failed to allocate fresh duckdb config"))
 
   (def database-ptr-ptr (ffi/write :ptr (ffi/write ffi/duckdb_database [nil])))
   (defer (ffi/duckdb_destroy_config config-ptr-ptr)
     (def config-ptr (ffi/read :ptr config-ptr-ptr))
     (eachp [k v] config-map
       (when (= (ffi/duckdb_set_config config-ptr (string k) (string v)) ffi/DuckDBError)
-        (error (string/format "Cannot set option %q=%q" k v))))
+        (error (string/format "cannot set option %q=%q" k v))))
 
     (def err-string-ptr (ffi/write :string ""))
 
@@ -79,12 +79,12 @@
    :close (fn [_] (ffi/duckdb_close database-ptr-ptr))})
 
 (defn connect
-  "Create a connection to a database.Caller is responsible to use :close method to disconnect"
+  "Create a connection to a database. Free with :close."
   [database]
 
   (def conn-ptr-ptr (ffi/write :ptr (ffi/write ffi/duckdb_connection [nil])))
   (when (= (ffi/duckdb_connect (database :ptr) conn-ptr-ptr) ffi/DuckDBError)
-    (error "Failed to create connection to DuckDB database"))
+    (error "failed to create connection to duckdb database"))
 
   {:ptr (ffi/read :ptr conn-ptr-ptr)
    :close (fn [_] (ffi/duckdb_disconnect conn-ptr-ptr))})
@@ -104,8 +104,7 @@
   (ffi/duckdb_query_progress (connection :ptr)))
 
 (defn query
-  "Execute a SQL query on a DuckDB connection and return the result.
-   Caller is responsible to use :close method to destroy the result."
+  "Execute a SQL query on a DuckDB connection and return the result. Free with :close."
   [connection query-string]
 
   (def result-ptr (ffi/write ffi/duckdb_result [0 0 0 nil nil nil]))
@@ -119,8 +118,7 @@
   (result/make-result result-ptr))
 
 (defn prepare
-  "Create a prepared statement object from a query. Caller is responsible to use :close method to
- destroy the prepared statement.
+  "Create a prepared statement object from a query. Free with :close.
 
 The prepared statement object caches parameter metadata (:param-count, :param-names, :param-types)
 for efficient access.
@@ -166,7 +164,8 @@ for efficient access.
 
    No parameters:
      (db/execute-prepared stmt)
-  "
+ Free with :close."
+  
   [prepared-statement &opt params]
   (default params [])
 
@@ -193,7 +192,7 @@ for efficient access.
 # Prepared Statement Util Functions
 #==------------------------------------------------------------------------==#
 
-(defn prepared-clear-bindings
+(defn clear-prepared-bindings
   "Clear all parameter bindings from a prepared statement."
   [prepared-statement]
   (ffi/duckdb_clear_bindings (prepared-statement :ptr)))

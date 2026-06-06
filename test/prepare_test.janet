@@ -56,12 +56,12 @@
            {:key-types [:varchar :int]
             :keys [:name :age]}])))))
 
-(deftest "prepared-clear-bindings function"
+(deftest "clear-prepared-bindings function"
   (with [db (db/open ":memory:")]
     (with [conn (db/connect db)]
       (with [stmt (db/prepare conn "SELECT ?::INT")]
         # Clear bindings (should not error even with no bindings)
-        (test (db/prepared-clear-bindings stmt) 0)))))
+        (test (db/clear-prepared-bindings stmt) 0)))))
 
 #==------------------------------------------------------------------------==#
 # bind / bind-named Tests
