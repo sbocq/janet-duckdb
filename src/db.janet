@@ -6,6 +6,7 @@
 
 (import ./ffi)
 (import ./result)
+(import ./prepare)
 (import ./types)
 (use judge)
 
@@ -115,35 +116,64 @@
 
   (result/make-result result-ptr))
 
-
 #==------------------------------------------------------------------------==#
 # Convenience Functions
 #==------------------------------------------------------------------------==#
 
+(defn- extract-params
+  "Helper to extract optional params from rest args.
+   Returns [params kw-table] where kw-table has :keywordize and :coll-type."
+  [args]
+
+  (def has-query-params (and (> (length args) 0) (or (indexed? (args 0)) (dictionary? (args 0)))))
+
+  (def [params & kvs] (if has-query-params args [nil ;args]))
+  (def kw-args (if kvs (table ;kvs) {}))
+
+  [params (get kw-args :keywordize true) (get kw-args :coll-type :struct)])
+
+(test (extract-params []) [nil true :struct])
+(test (extract-params [:coll-type :tuple]) [nil true :tuple])
+(test (extract-params [:keywordize false]) [nil false :struct])
+(test (extract-params [:keywordize false :coll-type :tuple]) [nil false :tuple])
+(test (extract-params [[42]]) [[42] true :struct])
+(test (extract-params [[42] :coll-type :tuple]) [[42] true :tuple])
+(test (extract-params [@{}]) [@{} true :struct])
+(test (extract-params [@{:a 1} :keywordize false]) [@{:a 1} false :struct])
+
 (defn query-rows
-  "Execute a SQL query and return results as an array of rows (structs by default).
-   Supports keyword arguments from result/columns-to-rows
-   (:keywordize default true, :coll-type default :struct)."
-  [connection query-string &keys {:keywordize keywordize :coll-type coll-type}]
-  (default keywordize true)
-  (default coll-type :struct)
-  (with [result (query connection query-string)]
-    (result/columns-to-rows (result/fetch-columns result)
-                            :keywordize keywordize
-                            :coll-type coll-type)))
+  "Execute a SQL query and return results as an array of rows.
+   If query parameters are provided, uses a prepared statement.
+   Accepts keyword args :keywordize (default true) and :coll-type (default :struct)."
+  [connection query-string & args]
+
+  (def [params keywordize coll-type] (extract-params args))
+
+  (if params
+    (with [stmt (prepare/prepare connection query-string)]
+      (with [result (prepare/execute stmt params)]
+        (result/result-rows result :keywordize keywordize :coll-type coll-type)))
+    (with [result (query connection query-string)]
+      (result/result-rows result :keywordize keywordize :coll-type coll-type))))
 
 (defn query-first
   "Execute a SQL query and return the first row, or nil if no rows.
-   Accepts same keyword args as query-rows."
-  [connection query-string &keys {:keywordize keywordize :coll-type coll-type}]
-  (default keywordize true)
-  (default coll-type :struct)
-  (first (query-rows connection query-string
-                     :keywordize keywordize
-                     :coll-type coll-type)))
+   If query params are provided, uses a prepared statement.
+   Accepts keyword args :keywordize (default true) and :coll-type (default :struct)."
+  [connection query-string & args]
+
+  (first (query-rows connection query-string ;args)))
 
 (defn execute-sql
-  "Execute a SQL statement (DDL/DML) and return the number of rows changed."
-  [connection sql-string]
-  (with [result (query connection sql-string)]
-    (result/rows-changed result)))
+  "Execute a SQL statement (DDL/DML) and return the number of rows changed.
+   If query params are provided, uses a prepared statement."
+  [connection sql-string & args]
+
+  (def [params _ _] (extract-params args))
+
+  (if params
+    (with [stmt (prepare/prepare connection sql-string)]
+      (with [result (prepare/execute stmt params)]
+        (result/rows-changed result)))
+    (with [result (query connection sql-string)]
+      (result/rows-changed result))))

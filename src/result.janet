@@ -206,7 +206,7 @@
         (table/to-struct))))
 
 (defn columns-to-rows
-  "convert columns result to rows result. The optional parameter `coll-type` (default `:struct`) can be one of `:tuple`,`struct`,`array` or `table`. If `keywordize` (default `true`) then column names are converted to keywords."
+  "convert columns result to rows result. The optional parameter `coll-type` (default `:struct`) can be one of `:tuple`,`:struct`,`:array` or `:table`. If `keywordize` (default `true`) then column names are converted to keywords."
   [columns &keys {:keywordize keywordize
                   :coll-type coll-type}]
 
@@ -258,3 +258,21 @@
                           coll-type)))
 
   rows)
+
+(defn result-rows
+  "Fetch all rows from a DuckDB result as an array of structs.
+   Accepts same keyword args as columns-to-rows (:keywordize, :coll-type)."
+  [result &keys {:keywordize keywordize :coll-type coll-type}]
+  (default keywordize true)
+  (default coll-type :struct)
+  (columns-to-rows (fetch-columns result)
+                   :keywordize keywordize
+                   :coll-type coll-type))
+
+(defn result-first
+  "Fetch the first row from a DuckDB result, or nil if empty.
+   Accepts same keyword args as columns-to-rows (:keywordize, :coll-type)."
+  [result &keys {:keywordize keywordize :coll-type coll-type}]
+  (default keywordize true)
+  (default coll-type :struct)
+  (first (result-rows result :keywordize keywordize :coll-type coll-type)))
