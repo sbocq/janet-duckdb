@@ -287,9 +287,11 @@
      :metadata {:ffi-data-type ffi-data-type :janet-from-value janet-from-value}}
     {:type-key-type :complex :type-key type-key}))
 
+# Internal — used by result.janet, db.janet and prepare.janet. Not part of public API.
 (defn destroy-logical-type-ptr [logical-type-ptr]
   (ffi/duckdb_destroy_logical_type (ffi/write :ptr logical-type-ptr)))
 
+# Internal — used by result.janet and db.janet. Not part of public API.
 (defn logical-type-from-ptr [logical-type-ptr]
   (def type-key (type-id-to-key (ffi/duckdb_get_type_id logical-type-ptr)))
   (def key-mappings (type-key-mappings type-key))
@@ -411,6 +413,7 @@
                   # Default
                   meta)])))
 
+# Internal — called by janet-array-from-vector. Not part of public API.
 (defn janet-array-from-data [data-ptr ffi-data-type offset len validity-mask
                              &keys {:cast-fn cast-fn}]
   (assert ffi-data-type)
@@ -435,6 +438,7 @@
                              (cast-fn (ffi/read ffi-data-type data-ptr (* row-idx sz)))))
         (+= row-idx 1))
       janet-array)))
+# Internal — used by result.janet. Not part of public API.
 
 (defn janet-array-from-vector [duckdb-vector-ptr offset len]
   (def logical-type-ptr (ffi/duckdb_vector_get_column_type duckdb-vector-ptr))

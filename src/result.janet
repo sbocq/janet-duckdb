@@ -52,6 +52,7 @@
    ffi/DUCKDB_STATEMENT_TYPE_MULTI       :multi})
 
 
+# Internal — called by db.janet and prepare.janet. Not part of public API.
 (defn make-result
   "Create a result object from a DuckDB result pointer.
   Free with :close."

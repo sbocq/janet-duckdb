@@ -18,6 +18,7 @@
   :source
   ["src/db.janet"
    "src/ffi.janet"
+   "src/prepare.janet"
    "src/result.janet"
-   "src/types.janet"
-   "src/prepare.janet"])
+   "src/types.janet"]
+)

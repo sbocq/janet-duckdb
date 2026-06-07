@@ -5,7 +5,6 @@
 #==----------------------------------------------------------------------------------------------==#
 
 (import ./ffi)
-(import ./prepare)
 (import ./result)
 (import ./types)
 (use judge)
@@ -116,82 +115,3 @@
 
   (result/make-result result-ptr))
 
-(defn prepare
-  "Create a prepared statement object from a query. Free with :close.
-
-The prepared statement object caches parameter metadata (:param-count, :param-names, :param-types)
-for efficient access.
-"
-  [connection query]
-
-  (def prepared-statement-ptr-ptr (ffi/write :ptr (ffi/write ffi/duckdb_prepared_statement [nil])))
-
-  (when (= (ffi/duckdb_prepare (connection :ptr) query prepared-statement-ptr-ptr) ffi/DuckDBError)
-    (error (ffi/duckdb_prepare_error (ffi/read :ptr prepared-statement-ptr-ptr))))
-
-  (def prepared-ptr (ffi/read :ptr prepared-statement-ptr-ptr))
-
-  # Cache parameter metadata for efficient access
-  (def param-count (int/to-number (ffi/duckdb_nparams prepared-ptr)))
-  (def param-names (array/new param-count))
-  (def param-types (array/new param-count))
-
-  (for i 1 (inc param-count)
-    (def param-name-ptr (ffi/duckdb_parameter_name prepared-ptr i))
-    (array/push param-names (defer (ffi/duckdb_free param-name-ptr)
-                              (keyword (ffi/deref-c-string-ptr param-name-ptr))))
-
-    (def logical-type-ptr (ffi/duckdb_param_logical_type prepared-ptr i))
-    (defer (types/destroy-logical-type-ptr logical-type-ptr)
-      (array/push param-types (-> (types/logical-type-from-ptr logical-type-ptr)
-                                  (types/logical-type-simplify)))))
-
-  {:ptr prepared-ptr
-   :param-count param-count
-   :param-names (tuple/slice param-names)
-   :param-types (tuple/slice param-types)
-   :close (fn [self] (ffi/duckdb_destroy_prepare prepared-statement-ptr-ptr))})
-
-(defn execute-prepared
-  "Execute a prepared statement. If params are provided, bind them first.
-
-   Positional parameters:
-     (db/execute-prepared stmt [1 \"Alice\"])
-
-   Named parameters:
-     (db/execute-prepared stmt {:id 1 :name \"Alice\"})
-
-   No parameters:
-     (db/execute-prepared stmt)
- Free with :close."
-  
-  [prepared-statement &opt params]
-  (default params [])
-
-  (cond
-    (indexed? params)
-    (eachp [i v] params
-      (prepare/bind prepared-statement (inc i) v))
-
-    (dictionary? params)
-    (eachp [k v] params
-      (prepare/bind-named prepared-statement (string k) v))
-
-    (error (string/format "params must be an array/tuple or struct/table, got %T" params)))
-
-  (def result-ptr (ffi/write ffi/duckdb_result [0 0 0 nil nil nil]))
-
-  (when (= (ffi/duckdb_execute_prepared (prepared-statement :ptr) result-ptr)
-            ffi/DuckDBError)
-    (error (ffi/duckdb_result_error result-ptr)))
-
-  (result/make-result result-ptr))
-
-#==------------------------------------------------------------------------==#
-# Prepared Statement Util Functions
-#==------------------------------------------------------------------------==#
-
-(defn clear-prepared-bindings
-  "Clear all parameter bindings from a prepared statement."
-  [prepared-statement]
-  (ffi/duckdb_clear_bindings (prepared-statement :ptr)))

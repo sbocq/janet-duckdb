@@ -12,13 +12,13 @@
     (duckdb/db/query conn "INSERT INTO users VALUES (1, 'Alice'), (2, 'Bob')")
 
     # Prepared SELECT with positional parameters
-    (with [stmt (duckdb/db/prepare conn "SELECT * FROM users WHERE id = ?")]
-      (with [result (duckdb/db/execute-prepared stmt [1])]
+    (with [stmt (duckdb/prepare/prepare conn "SELECT * FROM users WHERE id = ?")]
+      (with [result (duckdb/prepare/execute stmt [1])]
         (def row (first (duckdb/result/columns-to-rows (duckdb/result/fetch-columns result))))
         (printf "User 1: %n" row)))
 
     # Prepared SELECT with named parameters
-    (with [stmt (duckdb/db/prepare conn "SELECT * FROM users WHERE name = $n")]
-      (with [result (duckdb/db/execute-prepared stmt {:n "Bob"})]
+    (with [stmt (duckdb/prepare/prepare conn "SELECT * FROM users WHERE name = $n")]
+      (with [result (duckdb/prepare/execute stmt {:n "Bob"})]
         (def row (first (duckdb/result/columns-to-rows (duckdb/result/fetch-columns result))))
         (printf "Bob: %n" row)))))
