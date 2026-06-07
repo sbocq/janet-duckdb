@@ -11,6 +11,47 @@
 # Result Functions
 #==------------------------------------------------------------------------==#
 
+#==------------------------------------------------------------------------==#
+# Clean keyword mappings for DuckDB enum types
+#==------------------------------------------------------------------------==#
+
+(def result-type-map
+  # Map DuckDB result type integers to clean Janet keywords
+  {ffi/DUCKDB_RESULT_TYPE_INVALID      :invalid
+   ffi/DUCKDB_RESULT_TYPE_CHANGED_ROWS :changed-rows
+   ffi/DUCKDB_RESULT_TYPE_NOTHING      :nothing
+   ffi/DUCKDB_RESULT_TYPE_QUERY_RESULT :query-result})
+
+(def statement-type-map
+  # Map DuckDB statement type integers to clean Janet keywords
+  {ffi/DUCKDB_STATEMENT_TYPE_INVALID     :invalid
+   ffi/DUCKDB_STATEMENT_TYPE_SELECT      :select
+   ffi/DUCKDB_STATEMENT_TYPE_INSERT      :insert
+   ffi/DUCKDB_STATEMENT_TYPE_UPDATE      :update
+   ffi/DUCKDB_STATEMENT_TYPE_DELETE      :delete
+   ffi/DUCKDB_STATEMENT_TYPE_CREATE      :create
+   ffi/DUCKDB_STATEMENT_TYPE_EXPLAIN     :explain
+   ffi/DUCKDB_STATEMENT_TYPE_PREPARE     :prepare
+   ffi/DUCKDB_STATEMENT_TYPE_EXECUTE     :execute
+   ffi/DUCKDB_STATEMENT_TYPE_ALTER       :alter
+   ffi/DUCKDB_STATEMENT_TYPE_TRANSACTION :transaction
+   ffi/DUCKDB_STATEMENT_TYPE_COPY        :copy
+   ffi/DUCKDB_STATEMENT_TYPE_ANALYZE     :analyze
+   ffi/DUCKDB_STATEMENT_TYPE_DROP        :drop
+   ffi/DUCKDB_STATEMENT_TYPE_EXPORT      :export
+   ffi/DUCKDB_STATEMENT_TYPE_PRAGMA      :pragma
+   ffi/DUCKDB_STATEMENT_TYPE_VACUUM      :vacuum
+   ffi/DUCKDB_STATEMENT_TYPE_CALL        :call
+   ffi/DUCKDB_STATEMENT_TYPE_SET         :set
+   ffi/DUCKDB_STATEMENT_TYPE_LOAD        :load
+   ffi/DUCKDB_STATEMENT_TYPE_RELATION    :relation
+   ffi/DUCKDB_STATEMENT_TYPE_EXTENSION   :extension
+   ffi/DUCKDB_STATEMENT_TYPE_LOGICAL_PLAN :logical-plan
+   ffi/DUCKDB_STATEMENT_TYPE_ATTACH      :attach
+   ffi/DUCKDB_STATEMENT_TYPE_DETACH      :detach
+   ffi/DUCKDB_STATEMENT_TYPE_MULTI       :multi})
+
+
 (defn make-result
   "Create a result object from a DuckDB result pointer.
   Free with :close."
@@ -49,16 +90,16 @@
   (int/to-number (ffi/duckdb_rows_changed (result :ptr))))
 
 (defn return-type
-  "Get the return type of a DuckDB result"
+  "Get the return type of a DuckDB result — :query-result, :changed-rows, :nothing, or :invalid."
   [result]
   (:assert-valid result)
-  (ffi/duckdb_result_type_key (ffi/duckdb_result_return_type (result :struct))))
+  (get result-type-map (ffi/duckdb_result_return_type (result :struct))))
 
 (defn statement-type
-  "Get the return type of a DuckDB result"
+  "Get the statement type of a DuckDB result — :select, :insert, :create, etc."
   [result]
   (:assert-valid result)
-  (ffi/duckdb_statement_type_key (ffi/duckdb_result_statement_type (result :struct))))
+  (get statement-type-map (ffi/duckdb_result_statement_type (result :struct))))
 
 (defn describe-columns
   "Fetch count, names and types of the columns of a `result`. By default, it returns the simple

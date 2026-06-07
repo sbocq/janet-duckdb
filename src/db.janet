@@ -18,7 +18,6 @@
 #==------------------------------------------------------------------------==#
 # Configuration Functions
 #==------------------------------------------------------------------------==#
-(defn- dbg [x] (pp [x (type x)]) x)
 
 (defn config-flags-table
   "Get a table of all available configuration flags and their descriptions"

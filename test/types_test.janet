@@ -27,8 +27,8 @@
   (with [db (db/open ":memory:")]
     (with [conn (db/connect db)]
       (with [result (db/query conn "SELECT 1")]
-        (test (result/statement-type result) :DUCKDB_STATEMENT_TYPE_SELECT)
-        (test (result/return-type result) :DUCKDB_RESULT_TYPE_QUERY_RESULT)
+        (test (result/statement-type result) :select)
+        (test (result/return-type result) :query-result)
         (test (result/rows-changed result) 0)
         (test (result/describe-columns result :logical-type true)
           {:column-count 1
@@ -74,8 +74,8 @@
               decimal DECIMAL(5, 3)
           )
         `)]
-    (test (result/statement-type result) :DUCKDB_STATEMENT_TYPE_CREATE)
-    (test (result/return-type result) :DUCKDB_RESULT_TYPE_NOTHING)
+    (test (result/statement-type result) :create)
+    (test (result/return-type result) :nothing)
     (test (result/rows-changed result) 0)
     (test (result/describe-columns result :logical-type true)
       {:column-count 1
@@ -98,8 +98,8 @@
     )
 
   (with [result (db/query conn "SELECT * FROM types_test")]
-    (test (result/statement-type result) :DUCKDB_STATEMENT_TYPE_SELECT)
-    (test (result/return-type result) :DUCKDB_RESULT_TYPE_QUERY_RESULT)
+    (test (result/statement-type result) :select)
+    (test (result/return-type result) :query-result)
     (test (result/rows-changed result) 0)
     (test (result/describe-columns result :logical-type true)
       {:column-count 7
@@ -1060,7 +1060,7 @@
                  ('Pagliacci', 'sad'),
                  ('Mr. Mackey', 'ok')
         `)]
-    (test (result/return-type result) :DUCKDB_RESULT_TYPE_CHANGED_ROWS)
+    (test (result/return-type result) :changed-rows)
     (test (result/rows-changed result) 4)
     )
 
@@ -1116,7 +1116,7 @@
           INSERT INTO types_test
           VALUES (1), ('two'), (union_value(str := 'three'))
         `)]
-    (test (result/return-type result) :DUCKDB_RESULT_TYPE_CHANGED_ROWS)
+    (test (result/return-type result) :changed-rows)
     (test (result/rows-changed result) 3)
   )
 

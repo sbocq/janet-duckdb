@@ -2,7 +2,6 @@
 (import ../src/ffi)
 (import ../src/prepare)
 (import ../src/result)
-(import ../src/types)
 (use judge)
 
 #==------------------------------------------------------------------------==#

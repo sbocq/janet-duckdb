@@ -2,7 +2,6 @@
 (import ./ffi)
 (use judge)
 
-(defn- dbg [x] (pp [x (type x)]) x)
 
 #==------------------------------------------------------------------------==#
 # Basic Type Conversions
@@ -17,12 +16,12 @@
     (tuple/slice data 0 len)
     (ffi/read @[:char len] (ffi/duckdb_string_t_data (ffi/write ffi/duckdb_string_t duckdb-string)))))
 
-(defn janet-from-string
+(defn- janet-from-string
   "Convert a duckdb string to a Janet string"
   [duckdb-string]
   (string/from-bytes ;(janet-bytes-from-string duckdb-string)))
 
-(defn janet-from-blob
+(defn- janet-from-blob
   "Convert a duckdb string to a Janet string"
   [duckdb-string]
   (tuple/slice (janet-bytes-from-string duckdb-string)))
@@ -30,7 +29,7 @@
 (def n64-min (int/s64 math/int-min))
 (def n64-max (int/s64 math/int-max))
 
-(defn janet-from-int64 [s64]
+(defn- janet-from-int64 [s64]
   # Shameful attempt to shove a int64 into double-sized hole for convenience until we have 128bits
   # support.
   (if (<= n64-min s64 n64-max)
@@ -182,122 +181,6 @@
 (defn janet-from-interval [duckdb-interval]
   (def [months days micros] duckdb-interval)
   {:months months :days days :micros (janet-from-int64 micros)})
-
-#==------------------------------------------------------------------------==#
-# Reverse Conversion Helpers (Janet -> DuckDB value for binding)
-#==------------------------------------------------------------------------==#
-
-(defn janet-to-interval-value
-  "Convert a Janet interval struct to a duckdb_value.
-  Free with (ffi/duckdb_destroy_value (ffi/write :ptr v))."
-  [{:months months :days days :micros micros}]
-  (ffi/duckdb_create_interval [months days micros]))
-
-(test (let [v (janet-to-interval-value {:months 1 :days 2 :micros 3000000})
-            duckdb-interval (ffi/duckdb_get_interval v)]
-        (ffi/duckdb_destroy_value (ffi/write :ptr v))
-        (janet-from-interval duckdb-interval))
-  {:months 1 :days 2 :micros 3000000})
-
-(defn janet-to-timestamp-value
-  "Convert a Janet number (epoch microseconds) to a duckdb_value.
-  Free with (ffi/duckdb_destroy_value (ffi/write :ptr v))."
-  [epoch-micros]
-  (ffi/duckdb_create_timestamp [epoch-micros]))
-
-(test (let [v (janet-to-timestamp-value 1705305600000000)
-            duckdb-ts (ffi/duckdb_get_timestamp v)]
-        (ffi/duckdb_destroy_value (ffi/write :ptr v))
-        (janet-from-timestamp duckdb-ts))
-  1705305600000000)
-
-(defn janet-to-date-value
-  "Convert a Janet date struct to a duckdb_value.
-  Free with (ffi/duckdb_destroy_value (ffi/write :ptr v))."
-  [janet-date]
-  (ffi/duckdb_create_date (janet-to-date janet-date)))
-
-(test (let [v (janet-to-date-value {:year 2025 :month 0 :month-day 15})
-            duckdb-date (ffi/duckdb_get_date v)]
-        (ffi/duckdb_destroy_value (ffi/write :ptr v))
-        (janet-from-date duckdb-date))
-  {:month 0 :month-day 15 :year 2025})
-
-(defn janet-to-time-value
-  "Convert a Janet time struct to a duckdb_value.
-  Free with (ffi/duckdb_destroy_value (ffi/write :ptr v))."
-  [janet-time]
-  (ffi/duckdb_create_time (janet-to-time janet-time)))
-
-(test (let [v (janet-to-time-value {:hours 14 :minutes 42 :seconds 20 :micros 0})
-            duckdb-time (ffi/duckdb_get_time v)]
-        (ffi/duckdb_destroy_value (ffi/write :ptr v))
-        (janet-from-time duckdb-time))
-  {:hours 14 :minutes 42 :seconds 20 :micros 0})
-(defn janet-to-time-tz-value
-  "Convert a Janet time-tz struct to a duckdb_value.
-  Free with (ffi/duckdb_destroy_value (ffi/write :ptr v))."
-  [janet-date]
-  (ffi/duckdb_create_time_tz_value (janet-to-time-tz janet-date)))
-
-(test (let [v (janet-to-time-tz-value {:hours 14 :minutes 42 :seconds 20 :micros 0
-                                        :timezone-offset 3600})
-            duckdb-ttz (ffi/duckdb_get_time_tz v)]
-        (ffi/duckdb_destroy_value (ffi/write :ptr v))
-        (janet-from-time-tz duckdb-ttz))
-  @{:hours 13
-    :minutes 42
-    :seconds 20
-    :micros 0
-    :session-timezone-offset 3600})
-
-(defn janet-to-timestamp-tz-value
-  "Convert a Janet number (epoch microseconds) to a duckdb_value as TIMESTAMP_TZ.
-  Free with (ffi/duckdb_destroy_value (ffi/write :ptr v))."
-  [epoch-micros]
-  (ffi/duckdb_create_timestamp_tz [epoch-micros]))
-
-(test (let [v (janet-to-timestamp-tz-value 1705305600000000)
-            duckdb-ts (ffi/duckdb_get_timestamp_tz v)]
-        (ffi/duckdb_destroy_value (ffi/write :ptr v))
-        (janet-from-timestamp duckdb-ts))
-  1705305600000000)
-
-(defn janet-to-timestamp-s-value
-  "Convert a Janet number (epoch seconds) to a duckdb_value as TIMESTAMP_S.
-  Free with (ffi/duckdb_destroy_value (ffi/write :ptr v))."
-  [epoch-seconds]
-  (ffi/duckdb_create_timestamp_s [epoch-seconds]))
-
-(test (let [v (janet-to-timestamp-s-value 1705305600)
-            duckdb-ts (ffi/duckdb_get_timestamp_s v)]
-        (ffi/duckdb_destroy_value (ffi/write :ptr v))
-        (janet-from-timestamp duckdb-ts))
-  1705305600)
-
-(defn janet-to-timestamp-ms-value
-  "Convert a Janet number (epoch milliseconds) to a duckdb_value as TIMESTAMP_MS.
-  Free with (ffi/duckdb_destroy_value (ffi/write :ptr v))."
-  [epoch-millis]
-  (ffi/duckdb_create_timestamp_ms [epoch-millis]))
-
-(test (let [v (janet-to-timestamp-ms-value 1705305600000)
-            duckdb-ts (ffi/duckdb_get_timestamp_ms v)]
-        (ffi/duckdb_destroy_value (ffi/write :ptr v))
-        (janet-from-timestamp duckdb-ts))
-  1705305600000)
-
-(defn janet-to-timestamp-ns-value
-  "Convert a Janet number (epoch nanoseconds) to a duckdb_value as TIMESTAMP_NS.
-  Free with (ffi/duckdb_destroy_value (ffi/write :ptr v))."
-  [epoch-nanos]
-  (ffi/duckdb_create_timestamp_ns [epoch-nanos]))
-
-(test (let [v (janet-to-timestamp-ns-value 1000)
-            duckdb-ts (ffi/duckdb_get_timestamp_ns v)]
-        (ffi/duckdb_destroy_value (ffi/write :ptr v))
-        (janet-from-int64 (first duckdb-ts)))
-  1000)
 
 #==------------------------------------------------------------------------==#
 
