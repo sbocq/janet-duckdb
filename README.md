@@ -51,11 +51,10 @@ jpm -l deps
 ```janet
 (import duckdb)
 
-(with [db (duckdb/db/open)]
-  (with [conn (duckdb/db/connect db)]
-    (with [result (duckdb/db/query conn "SELECT 'Hello, DuckDB!' AS greeting")]
-      (def cols (duckdb/result/fetch-columns result))
-      (printf "Result: %s" (((cols :columns) 0) 0))))))
+(with [db (duckdb/open)]
+  (with [conn (duckdb/connect db)]
+    (def row (duckdb/query-first conn "SELECT 'Hello, DuckDB!' AS greeting"))
+    (printf "Result: %s" (row :greeting))))
 ```
 
 ```bash
@@ -63,26 +62,74 @@ jpm -l deps
 Result: Hello, DuckDB!
 ```
 
-## Examples
+## Convenience Functions
 
-Try these verified examples:
+```janet
+(import duckdb)
+
+(with [db (duckdb/open)]
+  (with [conn (duckdb/connect db)]
+    (def rows (duckdb/query-rows conn "SELECT 1 AS a, 'hello' AS b"))
+    (def row (duckdb/query-first conn "SELECT * FROM t"))
+    (def n (duckdb/execute-sql conn "INSERT INTO t VALUES (1)"))))
+```
+
+## Prepared Statements
+
+```janet
+(import duckdb)
+
+(with [db (duckdb/open ":memory:")]
+  (with [conn (duckdb/connect db)]
+    (with [stmt (duckdb/prepare conn "SELECT ?::INT, ?::VARCHAR")]
+
+      (duckdb/bind stmt 1 42)
+      (duckdb/bind stmt 2 "hello")
+
+      (with [result (duckdb/execute stmt)]
+        (def row (first (duckdb/columns-to-rows (duckdb/fetch-columns result)))))
+
+      (duckdb/bind-named stmt "$1" 99)
+
+      (with [result (duckdb/execute stmt [1 "world"])])
+
+      (duckdb/clear-bindings stmt))))
+```
+
+Complex types (structs, lists, maps, arrays, unions) are supported in parameter binding.
+
+## Result Metadata
+
+```janet
+(duckdb/return-type result)    ;; → :query-result
+(duckdb/statement-type result) ;; → :select
+```
+
+## Examples
 
 ```bash
 jpm -l janet examples/quickstart.janet
 jpm -l janet examples/result-processing.janet
 jpm -l janet examples/prepared-demo.janet
+jpm -l janet examples/prepared.janet
+jpm -l janet examples/convenience.janet
 ```
 
 - **quickstart.janet** — Open a database, run a query, print results
 - **result-processing.janet** — Column-oriented and row-oriented result access
 - **prepared-demo.janet** — Positional and named parameter binding
-
-## Status
+- **prepared.janet** — Full prepared statement lifecycle
+- **convenience.janet** — query-rows, query-first and execute-sql in action
 
 - Basic FFI bindings around the DuckDB C API
-- Usable for simple integrations
-- Still WIP — expect breaking changes
-- Most types are supported
+- Flat public API
+- Convenience functions
+- Prepared statements with type-aware parameter binding
+- Clean keyword mappings for result and statement types
+- Most DuckDB types supported for reading and binding
+- Still WIP
+## Status
+
 
 ## Types supported
 
@@ -110,10 +157,10 @@ Most DuckDB types are supported out of the box. See `test/types_test.janet` for 
 ## TODO
 
 - Support for more native types (e.g. UUID, BIT)
-- Lispy REPL-friendly query DSL (using `:memory:` as default) (TBD)
-- Bug fixes (of course)
+- Lispy REPL-friendly query DSL (using `:memory:` as default)
+- Bug fixes
 - More hacking
-- And then more bug fixes I guess (TBD)
+- And then more bug fixes I guess
 
 # Compatibility
 
@@ -121,12 +168,21 @@ Releases are compatible with the following versions of DuckDB:
 
 | Release Version | DuckDB Version   |
 |-----------------|------------------|
+| v0.6.x          | v1.5.x           |
 | v0.5.x          | v1.5.x           |
 | v0.4.x          | v1.4.x           |
 | v0.3.x          | v1.4.x           |
 | <= v0.2.x       | v1.3.1           |
 
 # Changelog
+
+## v0.6.0 2026-06-08
+
+- Flat public API
+- Convenience functions: `query-rows`, `query-first`, `execute-sql`
+- Prepared statements with parameter binding for all types
+- Clean keywords for result and statement types
+- Code quality improvements
 
 ## v0.5.2 2026-05-24
 

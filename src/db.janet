@@ -115,3 +115,35 @@
 
   (result/make-result result-ptr))
 
+
+#==------------------------------------------------------------------------==#
+# Convenience Functions
+#==------------------------------------------------------------------------==#
+
+(defn query-rows
+  "Execute a SQL query and return results as an array of rows (structs by default).
+   Supports keyword arguments from result/columns-to-rows
+   (:keywordize default true, :coll-type default :struct)."
+  [connection query-string &keys {:keywordize keywordize :coll-type coll-type}]
+  (default keywordize true)
+  (default coll-type :struct)
+  (with [result (query connection query-string)]
+    (result/columns-to-rows (result/fetch-columns result)
+                            :keywordize keywordize
+                            :coll-type coll-type)))
+
+(defn query-first
+  "Execute a SQL query and return the first row, or nil if no rows.
+   Accepts same keyword args as query-rows."
+  [connection query-string &keys {:keywordize keywordize :coll-type coll-type}]
+  (default keywordize true)
+  (default coll-type :struct)
+  (first (query-rows connection query-string
+                     :keywordize keywordize
+                     :coll-type coll-type)))
+
+(defn execute-sql
+  "Execute a SQL statement (DDL/DML) and return the number of rows changed."
+  [connection sql-string]
+  (with [result (query connection sql-string)]
+    (result/rows-changed result)))

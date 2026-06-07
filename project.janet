@@ -1,7 +1,7 @@
 (declare-project
   :name "janet-duckdb"
   :description "A Janet library for DuckDB, an in-process SQL OLAP database management system"
-  :version "0.1.0"
+  :version "0.6.0"
   :author "Sébastien Bocq"
   :license "MIT"
   :url "https://github.com/sbocq/janet-duckdb"
