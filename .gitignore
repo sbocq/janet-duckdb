@@ -1,3 +1,4 @@
 jpm_tree
 .*.stamp
+*.tested
 *~

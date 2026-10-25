@@ -2,6 +2,7 @@
 
 .deps.stamp:
 	jpm -l deps
+	jpm -l install
 	touch $@
 
 judge: .deps.stamp
