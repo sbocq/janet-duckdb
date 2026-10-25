@@ -5,8 +5,8 @@
 	touch $@
 
 judge: .deps.stamp
-	TZ=CET ./jpm_tree/bin/judge
+	./jpm_tree/bin/judge
 
 valgrind: | judge
-	TZ=CET valgrind -s --leak-check=full --track-origins=yes janet ./jpm_tree/bin/judge
+	valgrind -s --leak-check=full --track-origins=yes janet ./jpm_tree/bin/judge
 

@@ -360,7 +360,13 @@
   )
 
 (deftest: mem_db "time type test" [[_ conn]]
-  (with [result (db/query conn `
+  # Use a fixed-offset time zone so the expectations below hold in every
+  # season, unlike CET whose DST shifts the session offset twice a year.
+  # The connection is shared with the other tests, restore even on failure.
+  (def tz (db/query-first conn "SELECT current_setting('timezone') AS tz"))
+  (db/execute-sql conn "SET TimeZone='Etc/GMT-2'")
+  (defer (db/execute-sql conn (string "SET TimeZone='" (tz :tz) "'"))
+    (with [result (db/query conn `
           SELECT
               current_setting('timezone'),
               TIME '1992-09-20 11:30:00.123456',
@@ -368,22 +374,8 @@
               TIMETZ '1992-09-20 11:30:00.123456-02:00',
               TIMETZ '1992-09-20 11:30:00.123456+05:30'
         `)]
-    (test (result/describe-columns result :logical-type true)
-      {:column-count 5
-       :column-names ["current_setting('timezone')"
-                      "CAST('1992-09-20 11:30:00.123456' AS TIME)"
-                      "CAST('1992-09-20 11:30:00.123456' AS \"TIME WITH TIME ZONE\")"
-                      "CAST('1992-09-20 11:30:00.123456-02:00' AS \"TIME WITH TIME ZONE\")"
-                      "CAST('1992-09-20 11:30:00.123456+05:30' AS \"TIME WITH TIME ZONE\")"]
-       :column-types [:varchar
-                      :time
-                      :time_tz
-                      :time_tz
-                      :time_tz]})
-    (let [columns (result/fetch-columns result)]
-      (test columns
-        {:column @column-from-name
-         :column-count 5
+      (test (result/describe-columns result :logical-type true)
+        {:column-count 5
          :column-names ["current_setting('timezone')"
                         "CAST('1992-09-20 11:30:00.123456' AS TIME)"
                         "CAST('1992-09-20 11:30:00.123456' AS \"TIME WITH TIME ZONE\")"
@@ -393,63 +385,65 @@
                         :time
                         :time_tz
                         :time_tz
-                        :time_tz]
-         :columns @[@["CET"]
-                    @[{:hours 11
-                       :micros 123456
-                       :minutes 30
-                       :seconds 0}]
-                    @[@{:hours 9
-                        :micros 123456
-                        :minutes 30
-                        :seconds 0
-                        :session-timezone-offset 7200}]
-                    @[@{:hours 11
-                        :micros 123456
-                        :minutes 30
-                        :seconds 0
-                        :session-timezone-offset 7200}]
-                    @[@{:hours 4
-                        :micros 123456
-                        :minutes 0
-                        :seconds 0
-                        :session-timezone-offset 7200}]]
-         :row-count 1})
+                        :time_tz]})
+      (let [columns (result/fetch-columns result)]
+        (test columns
+          {:column @column-from-name
+           :column-count 5
+           :column-names ["current_setting('timezone')"
+                          "CAST('1992-09-20 11:30:00.123456' AS TIME)"
+                          "CAST('1992-09-20 11:30:00.123456' AS \"TIME WITH TIME ZONE\")"
+                          "CAST('1992-09-20 11:30:00.123456-02:00' AS \"TIME WITH TIME ZONE\")"
+                          "CAST('1992-09-20 11:30:00.123456+05:30' AS \"TIME WITH TIME ZONE\")"]
+           :column-types [:varchar
+                          :time
+                          :time_tz
+                          :time_tz
+                          :time_tz]
+           :columns @[@["Etc/GMT-2"]
+                      @[{:hours 11
+                         :micros 123456
+                         :minutes 30
+                         :seconds 0}]
+                      @[@{:hours 9
+                          :micros 123456
+                          :minutes 30
+                          :seconds 0
+                          :session-timezone-offset 7200}]
+                      @[@{:hours 11
+                          :micros 123456
+                          :minutes 30
+                          :seconds 0
+                          :session-timezone-offset 7200}]
+                      @[@{:hours 4
+                          :micros 123456
+                          :minutes 0
+                          :seconds 0
+                          :session-timezone-offset 7200}]]
+           :row-count 1})
 
-      ))
+        ))
+    )
   )
 
 (deftest: mem_db "timestamp type test" [[_ conn]]
-  (with [result (db/query conn `
-          SELECT
-              current_setting('timezone'),
-              TIMESTAMP_NS '1992-09-20 11:30:00.123456789',
-              TIMESTAMP '1992-09-20 11:30:00.123456789',
-              TIMESTAMP_MS '1992-09-20 11:30:00.123456789',
-              TIMESTAMP_S '1992-09-20 11:30:00.123456789',
-              TIMESTAMPTZ '1992-09-20 11:30:00.123456789',
-              TIMESTAMPTZ '1992-09-20 12:30:00.123456789+01:00'
-        `)]
-    (test (result/describe-columns result :logical-type true)
-      {:column-count 7
-       :column-names ["current_setting('timezone')"
-                      "CAST('1992-09-20 11:30:00.123456789' AS \"TIMESTAMP_NS\")"
-                      "CAST('1992-09-20 11:30:00.123456789' AS TIMESTAMP)"
-                      "CAST('1992-09-20 11:30:00.123456789' AS \"TIMESTAMP_MS\")"
-                      "CAST('1992-09-20 11:30:00.123456789' AS \"TIMESTAMP_S\")"
-                      "CAST('1992-09-20 11:30:00.123456789' AS \"TIMESTAMP WITH TIME ZONE\")"
-                      "CAST('1992-09-20 12:30:00.123456789+01:00' AS \"TIMESTAMP WITH TIME ZONE\")"]
-       :column-types [:varchar
-                      :timestamp_ns
-                      :timestamp
-                      :timestamp_ms
-                      :timestamp_s
-                      :timestamp_tz
-                      :timestamp_tz]})
-    (let [columns (result/fetch-columns result)]
-      (test columns
-        {:column @column-from-name
-         :column-count 7
+  # Use a fixed-offset time zone so the expectations below hold under any
+  # ambient timezone. The connection is shared, restore even on failure.
+  (def tz (db/query-first conn "SELECT current_setting('timezone') AS tz"))
+  (db/execute-sql conn "SET TimeZone='Etc/GMT-2'")
+  (defer (db/execute-sql conn (string "SET TimeZone='" (tz :tz) "'"))
+    (with [result (db/query conn `
+            SELECT
+                current_setting('timezone'),
+                TIMESTAMP_NS '1992-09-20 11:30:00.123456789',
+                TIMESTAMP '1992-09-20 11:30:00.123456789',
+                TIMESTAMP_MS '1992-09-20 11:30:00.123456789',
+                TIMESTAMP_S '1992-09-20 11:30:00.123456789',
+                TIMESTAMPTZ '1992-09-20 11:30:00.123456789',
+                TIMESTAMPTZ '1992-09-20 12:30:00.123456789+01:00'
+          `)]
+      (test (result/describe-columns result :logical-type true)
+        {:column-count 7
          :column-names ["current_setting('timezone')"
                         "CAST('1992-09-20 11:30:00.123456789' AS \"TIMESTAMP_NS\")"
                         "CAST('1992-09-20 11:30:00.123456789' AS TIMESTAMP)"
@@ -463,20 +457,38 @@
                         :timestamp_ms
                         :timestamp_s
                         :timestamp_tz
-                        :timestamp_tz]
-         :columns @[@["CET"]
-                    @["716988600123456789"]
-                    @[716988600123456]
-                    @[716988600123]
-                    @[716988600]
-                    @[716981400123456]
-                    @[716988600123456]]
-         :row-count 1})
-      (test (type (get-in columns [:columns 0 0])) :string)
-      (test (type (get-in columns [:columns 1 0])) :core/s64)
-      ))
+                        :timestamp_tz]})
+      (let [columns (result/fetch-columns result)]
+        (test columns
+          {:column @column-from-name
+           :column-count 7
+           :column-names ["current_setting('timezone')"
+                          "CAST('1992-09-20 11:30:00.123456789' AS \"TIMESTAMP_NS\")"
+                          "CAST('1992-09-20 11:30:00.123456789' AS TIMESTAMP)"
+                          "CAST('1992-09-20 11:30:00.123456789' AS \"TIMESTAMP_MS\")"
+                          "CAST('1992-09-20 11:30:00.123456789' AS \"TIMESTAMP_S\")"
+                          "CAST('1992-09-20 11:30:00.123456789' AS \"TIMESTAMP WITH TIME ZONE\")"
+                          "CAST('1992-09-20 12:30:00.123456789+01:00' AS \"TIMESTAMP WITH TIME ZONE\")"]
+           :column-types [:varchar
+                          :timestamp_ns
+                          :timestamp
+                          :timestamp_ms
+                          :timestamp_s
+                          :timestamp_tz
+                          :timestamp_tz]
+           :columns @[@["Etc/GMT-2"]
+                      @["716988600123456789"]
+                      @[716988600123456]
+                      @[716988600123]
+                      @[716988600]
+                      @[716981400123456]
+                      @[716988600123456]]
+           :row-count 1})
+        (test (type (get-in columns [:columns 0 0])) :string)
+        (test (type (get-in columns [:columns 1 0])) :core/s64)
+        ))
+    )
   )
-
 (deftest: mem_db "interval type test" [[_ conn]]
   (with [result (db/query conn `
           SELECT
