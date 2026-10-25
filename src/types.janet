@@ -277,7 +277,9 @@
       :timestamp_tz [ffi/duckdb_timestamp janet-from-timestamp]
       :any [nil nil]
       :bignum [ffi/duckdb_bignum_t nil]
-      :sqlnull [nil nil]
+      # DuckDB 2.0's NULL type: vectors are all-NULL by definition, the data
+      # type is never dereferenced (dummy :int64 makes this a "simple" type).
+      :sqlnull [:int64 nil]
       :string_literal [:string nil]
       :integer_literal [:int64 int/to-number]
       (error (string/format "type unknown: %q" type-key))))

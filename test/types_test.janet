@@ -313,17 +313,17 @@
         `)]
     (test (result/describe-columns result :logical-type true)
       {:column-count 3
-       :column-names ["CAST('\\xAA' AS \"BLOB\")"
-                      "CAST('\\xAA\\xAB\\xAC' AS \"BLOB\")"
-                      "CAST('AB' AS \"BLOB\")"]
+       :column-names ["CAST('\\xAA' AS BLOB)"
+                      "CAST('\\xAA\\xAB\\xAC' AS BLOB)"
+                      "CAST('AB' AS BLOB)"]
        :column-types [:blob :blob :blob]})
     (let [columns (result/fetch-columns result)]
       (test columns
         {:column @column-from-name
          :column-count 3
-         :column-names ["CAST('\\xAA' AS \"BLOB\")"
-                        "CAST('\\xAA\\xAB\\xAC' AS \"BLOB\")"
-                        "CAST('AB' AS \"BLOB\")"]
+         :column-names ["CAST('\\xAA' AS BLOB)"
+                        "CAST('\\xAA\\xAB\\xAC' AS BLOB)"
+                        "CAST('AB' AS BLOB)"]
          :column-types [:blob :blob :blob]
          :columns @[@[[-86]] @[[-86 -85 -84]] @[[65 66]]]
          :row-count 1})
@@ -378,9 +378,9 @@
         {:column-count 5
          :column-names ["current_setting('timezone')"
                         "CAST('1992-09-20 11:30:00.123456' AS TIME)"
-                        "CAST('1992-09-20 11:30:00.123456' AS \"TIME WITH TIME ZONE\")"
-                        "CAST('1992-09-20 11:30:00.123456-02:00' AS \"TIME WITH TIME ZONE\")"
-                        "CAST('1992-09-20 11:30:00.123456+05:30' AS \"TIME WITH TIME ZONE\")"]
+                        "CAST('1992-09-20 11:30:00.123456' AS TIMETZ)"
+                        "CAST('1992-09-20 11:30:00.123456-02:00' AS TIMETZ)"
+                        "CAST('1992-09-20 11:30:00.123456+05:30' AS TIMETZ)"]
          :column-types [:varchar
                         :time
                         :time_tz
@@ -392,9 +392,9 @@
            :column-count 5
            :column-names ["current_setting('timezone')"
                           "CAST('1992-09-20 11:30:00.123456' AS TIME)"
-                          "CAST('1992-09-20 11:30:00.123456' AS \"TIME WITH TIME ZONE\")"
-                          "CAST('1992-09-20 11:30:00.123456-02:00' AS \"TIME WITH TIME ZONE\")"
-                          "CAST('1992-09-20 11:30:00.123456+05:30' AS \"TIME WITH TIME ZONE\")"]
+                          "CAST('1992-09-20 11:30:00.123456' AS TIMETZ)"
+                          "CAST('1992-09-20 11:30:00.123456-02:00' AS TIMETZ)"
+                          "CAST('1992-09-20 11:30:00.123456+05:30' AS TIMETZ)"]
            :column-types [:varchar
                           :time
                           :time_tz
@@ -445,12 +445,12 @@
       (test (result/describe-columns result :logical-type true)
         {:column-count 7
          :column-names ["current_setting('timezone')"
-                        "CAST('1992-09-20 11:30:00.123456789' AS \"TIMESTAMP_NS\")"
+                        "CAST('1992-09-20 11:30:00.123456789' AS TIMESTAMP_NS)"
                         "CAST('1992-09-20 11:30:00.123456789' AS TIMESTAMP)"
-                        "CAST('1992-09-20 11:30:00.123456789' AS \"TIMESTAMP_MS\")"
-                        "CAST('1992-09-20 11:30:00.123456789' AS \"TIMESTAMP_S\")"
-                        "CAST('1992-09-20 11:30:00.123456789' AS \"TIMESTAMP WITH TIME ZONE\")"
-                        "CAST('1992-09-20 12:30:00.123456789+01:00' AS \"TIMESTAMP WITH TIME ZONE\")"]
+                        "CAST('1992-09-20 11:30:00.123456789' AS TIMESTAMP_MS)"
+                        "CAST('1992-09-20 11:30:00.123456789' AS TIMESTAMP_S)"
+                        "CAST('1992-09-20 11:30:00.123456789' AS TIMESTAMPTZ)"
+                        "CAST('1992-09-20 12:30:00.123456789+01:00' AS TIMESTAMPTZ)"]
          :column-types [:varchar
                         :timestamp_ns
                         :timestamp
@@ -463,12 +463,12 @@
           {:column @column-from-name
            :column-count 7
            :column-names ["current_setting('timezone')"
-                          "CAST('1992-09-20 11:30:00.123456789' AS \"TIMESTAMP_NS\")"
+                          "CAST('1992-09-20 11:30:00.123456789' AS TIMESTAMP_NS)"
                           "CAST('1992-09-20 11:30:00.123456789' AS TIMESTAMP)"
-                          "CAST('1992-09-20 11:30:00.123456789' AS \"TIMESTAMP_MS\")"
-                          "CAST('1992-09-20 11:30:00.123456789' AS \"TIMESTAMP_S\")"
-                          "CAST('1992-09-20 11:30:00.123456789' AS \"TIMESTAMP WITH TIME ZONE\")"
-                          "CAST('1992-09-20 12:30:00.123456789+01:00' AS \"TIMESTAMP WITH TIME ZONE\")"]
+                          "CAST('1992-09-20 11:30:00.123456789' AS TIMESTAMP_MS)"
+                          "CAST('1992-09-20 11:30:00.123456789' AS TIMESTAMP_S)"
+                          "CAST('1992-09-20 11:30:00.123456789' AS TIMESTAMPTZ)"
+                          "CAST('1992-09-20 12:30:00.123456789+01:00' AS TIMESTAMPTZ)"]
            :column-types [:varchar
                           :timestamp_ns
                           :timestamp

@@ -101,6 +101,9 @@
   DUCKDB_STATEMENT_TYPE_ATTACH 25
   DUCKDB_STATEMENT_TYPE_DETACH 26
   DUCKDB_STATEMENT_TYPE_MULTI 27
+  DUCKDB_STATEMENT_TYPE_COPY_DATABASE 28
+  DUCKDB_STATEMENT_TYPE_UPDATE_EXTENSIONS 29
+  DUCKDB_STATEMENT_TYPE_MERGE_INTO 30
   )
 
 (defcenum duckdb_error_type
@@ -147,6 +150,8 @@
   DUCKDB_ERROR_AUTOLOAD 40
   DUCKDB_ERROR_SEQUENCE 41
   DUCKDB_INVALID_CONFIGURATION 42
+  DUCKDB_ERROR_DATA_CORRUPTION 43
+  DUCKDB_ERROR_RESOURCE_IN_USE 44
   )
 
 (defcenum duckdb_cast_mode
@@ -195,6 +200,9 @@
   DUCKDB_TYPE_STRING_LITERAL 37
   DUCKDB_TYPE_INTEGER_LITERAL 38
   DUCKDB_TYPE_TIME_NS 39
+  DUCKDB_TYPE_GEOMETRY 40
+  DUCKDB_TYPE_VARIANT 41
+  DUCKDB_TYPE_TIMESTAMP_TZ_NS 42
   )
 
 #==------------------------------------------------------------------------==#
@@ -307,6 +315,11 @@
 (defcstruct duckdb_string_t
   value duckdb_string_value_t)
 
+# Allocated string, free data with duckdb_free
+(defcstruct duckdb_string
+  data :ptr
+  size idx_t)
+
 # List entry structure
 (defcstruct duckdb_list_entry
   offset idx_t
@@ -326,7 +339,7 @@
 # BITs are composed of a byte pointer and a size
 # BIT byte data has 0 to 7 bits of padding
 (defcstruct duckdb_bit_t
-  data :uint8
+  data :ptr
   size idx_t)
 
 # BIGNUMs are composed of a byte pointer, a size, and an is_negative bool
@@ -544,8 +557,11 @@
 
 # Value functions
 (ffi/defbind duckdb_destroy_value :void [value-ptr-ptr :ptr])
+# Returns a borrowed logical type, do not destroy it
+(ffi/defbind duckdb_get_value_type :ptr [value-ptr :ptr])
 (ffi/defbind duckdb_create_varchar :ptr [text :string])
 (ffi/defbind duckdb_create_varchar-length :ptr [text :string length idx_t])
+(ffi/defbind duckdb_create_blob :ptr [data :ptr length idx_t])
 (ffi/defbind duckdb_create_bool :ptr [input :bool])
 (ffi/defbind duckdb_create_int8 :ptr [input :int8])
 (ffi/defbind duckdb_create_int16 :ptr [input :int16])
@@ -553,7 +569,9 @@
 (ffi/defbind duckdb_create_int64 :ptr [input :int64])
 (ffi/defbind duckdb_create_hugeint :ptr [input duckdb_hugeint])
 (ffi/defbind duckdb_create_uhugeint :ptr [input duckdb_uhugeint])
+(ffi/defbind duckdb_create_uuid :ptr [input duckdb_uhugeint])
 (ffi/defbind duckdb_create_bignum :ptr [input duckdb_bignum_t])
+(ffi/defbind duckdb_create_bit :ptr [input duckdb_bit_t])
 (ffi/defbind duckdb_create_uint8 :ptr [input :uint8])
 (ffi/defbind duckdb_create_uint16 :ptr [input :uint16])
 (ffi/defbind duckdb_create_uint32 :ptr [input :uint32])
@@ -564,8 +582,10 @@
 (ffi/defbind duckdb_create_time :ptr [input duckdb_time])
 (ffi/defbind duckdb_create_time_ns :ptr [input duckdb_time_ns])
 (ffi/defbind duckdb_create_timestamp :ptr [input duckdb_timestamp])
+(ffi/defbind duckdb_create_timestamp_s :ptr [input duckdb_timestamp_s])
+(ffi/defbind duckdb_create_timestamp_ms :ptr [input duckdb_timestamp_ms])
+(ffi/defbind duckdb_create_timestamp_ns :ptr [input duckdb_timestamp_ns])
 (ffi/defbind duckdb_create_interval :ptr [input duckdb_interval])
-(ffi/defbind duckdb_create_null :ptr [])
 (ffi/defbind duckdb_create_decimal :ptr [input duckdb_decimal_t])
 (ffi/defbind duckdb_create_null_value :ptr [])
 (ffi/defbind duckdb_create_struct_value :ptr [type :ptr values :ptr])
@@ -575,6 +595,7 @@
 (ffi/defbind duckdb_create_union_value :ptr [union-type :ptr tag-index idx_t value :ptr])
 (ffi/defbind duckdb_create_time_tz_value :ptr [input duckdb_time_tz])
 (ffi/defbind duckdb_create_timestamp_tz :ptr [input duckdb_timestamp])
+(ffi/defbind duckdb_create_timestamp_tz_ns :ptr [input duckdb_timestamp_ns])
 (ffi/defbind duckdb_create_timestamp_s :ptr [input duckdb_timestamp_s])
 (ffi/defbind duckdb_create_timestamp_ms :ptr [input duckdb_timestamp_ms])
 (ffi/defbind duckdb_create_timestamp_ns :ptr [input duckdb_timestamp_ns])
@@ -615,14 +636,15 @@
 (ffi/defbind duckdb_create_logical_type :ptr [type duckdb_type])
 (ffi/defbind duckdb_create_list_type :ptr [child-type-ptr :ptr])
 (ffi/defbind duckdb_create_map_type :ptr [key-type-ptr :ptr value-type-ptr :ptr])
+(ffi/defbind duckdb_create_array_type :ptr [type-ptr :ptr array-size idx_t])
+(ffi/defbind duckdb_create_union_type :ptr [member-types-ptr :ptr member-names-ptr :ptr member-count idx_t])
 (ffi/defbind duckdb_create_struct_type :ptr [child-types-ptr :ptr child-names-ptr :ptr child-count idx_t])
 (ffi/defbind duckdb_create_decimal-type :ptr [width :uint8 scale :uint8])
 (ffi/defbind duckdb_create_enum_type :ptr [enum-name :string enum-values-ptr :ptr enum-count idx_t])
 (ffi/defbind duckdb_destroy_logical_type :void [type-ptr-ptr :ptr])
 (ffi/defbind duckdb_get_type_id duckdb_type [type-ptr :ptr])
-(ffi/defbind duckdb_logical_type_child_count idx_t [type-ptr :ptr])
-(ffi/defbind duckdb_logical_type_child :ptr [type-ptr :ptr index idx_t])
-(ffi/defbind duckdb_logical_type_child-name :string [type-ptr :ptr index idx_t])
+(ffi/defbind duckdb_logical_type_get_alias :string [type-ptr :ptr])
+(ffi/defbind duckdb_logical_type_set_alias :void [type-ptr :ptr alias :string])
 (ffi/defbind duckdb_enum_dictionary_size idx_t [type-ptr :ptr])
 (ffi/defbind duckdb_enum_dictionary_value :ptr [type-ptr :ptr index idx_t])
 (ffi/defbind duckdb_enum_internal_type duckdb_type [type-ptr :ptr])
@@ -652,15 +674,22 @@
 (ffi/defbind duckdb_vector_get_column_type :ptr [vector-ptr :ptr])
 (ffi/defbind duckdb_vector_get_data :ptr [vector-ptr :ptr])
 (ffi/defbind duckdb_vector_get_validity :ptr [vector-ptr :ptr])
+(ffi/defbind duckdb_create_vector :ptr [type-ptr :ptr capacity idx_t])
+(ffi/defbind duckdb_vector_ensure_validity_writable :void [vector-ptr :ptr])
+(ffi/defbind duckdb_vector_reference_value :void [vector-ptr :ptr value-ptr :ptr])
+(ffi/defbind duckdb_vector_reference_vector :void [to-vector-ptr :ptr from-vector-ptr :ptr])
 (ffi/defbind duckdb_validity_row_is_valid :bool [validity-mask-ptr :ptr row-idx idx_t])
+(ffi/defbind duckdb_validity_set_row_invalid :void [validity-mask-ptr :ptr row-idx idx_t])
+(ffi/defbind duckdb_validity_set_row_valid :void [validity-mask-ptr :ptr row-idx idx_t])
+(ffi/defbind duckdb_validity_set_row_validity :void [validity-mask-ptr :ptr row-idx idx_t valid :bool])
 (ffi/defbind duckdb_array_vector_get_child :ptr [vector-ptr :ptr])
 (ffi/defbind duckdb_list_vector_get_child :ptr [vector-ptr :ptr])
+(ffi/defbind duckdb_list_vector_get_size idx_t [vector-ptr :ptr])
+(ffi/defbind duckdb_list_vector_reserve duckdb_state [vector-ptr :ptr required-capacity idx_t])
+(ffi/defbind duckdb_list_vector_set_size duckdb_state [vector-ptr :ptr size idx_t])
 (ffi/defbind duckdb_struct_vector_get_child :ptr [vector-ptr :ptr index idx_t])
 (ffi/defbind duckdb_vector_assign_string_element :void [vector-ptr :ptr index idx_t str :string])
 (ffi/defbind duckdb_vector_assign_string_element-len :void [vector-ptr :ptr index idx_t str :string str-len idx_t])
-(ffi/defbind duckdb_vector_get_entry_valid :bool [vector-ptr :ptr index idx_t])
-(ffi/defbind duckdb_vector_get_entry_null :bool [vector-ptr :ptr index idx_t])
-(ffi/defbind duckdb_vector_set_entry_null :void [vector-ptr :ptr index idx_t])
 
 # Appender functions
 (ffi/defbind duckdb_appender_create duckdb_state [connection-ptr :ptr schema :string table :string out-appender-ptr-ptr :ptr])
@@ -670,35 +699,10 @@
 (ffi/defbind duckdb_appender_flush duckdb_state [appender-ptr :ptr])
 (ffi/defbind duckdb_appender_close duckdb_state [appender-ptr :ptr])
 (ffi/defbind duckdb_appender_error :string [appender-ptr :ptr])
-(ffi/defbind duckdb_appender_append_bool duckdb_state [appender-ptr :ptr value :bool])
-(ffi/defbind duckdb_appender_append_int8 duckdb_state [appender-ptr :ptr value :int8])
-(ffi/defbind duckdb_appender_append_int16 duckdb_state [appender-ptr :ptr value :int16])
-(ffi/defbind duckdb_appender_append_int32 duckdb_state [appender-ptr :ptr value :int32])
-(ffi/defbind duckdb_appender_append_int64 duckdb_state [appender-ptr :ptr value :int64])
-(ffi/defbind duckdb_appender_append_hugeint duckdb_state [appender-ptr :ptr value duckdb_hugeint])
-(ffi/defbind duckdb_appender_append_uhugeint duckdb_state [appender-ptr :ptr value duckdb_uhugeint])
-(ffi/defbind duckdb_appender_append_uint8 duckdb_state [appender-ptr :ptr value :uint8])
-(ffi/defbind duckdb_appender_append_uint16 duckdb_state [appender-ptr :ptr value :uint16])
-(ffi/defbind duckdb_appender_append_uint32 duckdb_state [appender-ptr :ptr value :uint32])
-(ffi/defbind duckdb_appender_append_uint64 duckdb_state [appender-ptr :ptr value :uint64])
-(ffi/defbind duckdb_appender_append_float duckdb_state [appender-ptr :ptr value :float])
-(ffi/defbind duckdb_appender_append_double duckdb_state [appender-ptr :ptr value :double])
-(ffi/defbind duckdb_appender_append_date duckdb_state [appender-ptr :ptr value duckdb_date])
-(ffi/defbind duckdb_appender_append_time duckdb_state [appender-ptr :ptr value duckdb_time])
-(ffi/defbind duckdb_appender_append_timestamp duckdb_state [appender-ptr :ptr value duckdb_timestamp])
-(ffi/defbind duckdb_appender_append_interval duckdb_state [appender-ptr :ptr value duckdb_interval])
-(ffi/defbind duckdb_appender_append_varchar duckdb_state [appender-ptr :ptr value :string])
-(ffi/defbind duckdb_appender_append_varchar-length duckdb_state [appender-ptr :ptr value :string length idx_t])
-(ffi/defbind duckdb_appender_append_blob duckdb_state [appender-ptr :ptr value-ptr :ptr length idx_t])
-(ffi/defbind duckdb_appender_append_null duckdb_state [appender-ptr :ptr])
-(ffi/defbind duckdb_appender_append_value duckdb_state [appender-ptr :ptr value-ptr :ptr])
 
 # Table functions
 (ffi/defbind duckdb_table_description_create duckdb_state [connection-ptr :ptr schema :string table :string out-description-ptr-ptr :ptr])
 (ffi/defbind duckdb_table_description_destroy :void [description-ptr-ptr :ptr])
-(ffi/defbind duckdb_table_description_column_count idx_t [description-ptr :ptr])
-(ffi/defbind duckdb_table_description_column_name :string [description-ptr :ptr column-index idx_t])
-(ffi/defbind duckdb_table_description_column_type :ptr [description-ptr :ptr column-index idx_t])
 
 # Row functions
 (ffi/defbind duckdb_row_count idx_t [result-ptr :ptr])
@@ -722,12 +726,16 @@
 (ffi/defbind duckdb_value_varchar :string [result-ptr :ptr col idx_t row idx_t])
 (ffi/defbind duckdb_value_varchar-length :string [result-ptr :ptr col idx_t row idx_t length-ptr :ptr])
 (ffi/defbind duckdb_value_blob :ptr [result-ptr :ptr col idx_t row idx_t length-ptr :ptr])
-(ffi/defbind duckdb_value_bit :ptr [result-ptr :ptr col idx_t row idx_t length-ptr :ptr])
 (ffi/defbind duckdb_value_is_null :bool [result-ptr :ptr col idx_t row idx_t])
+(ffi/defbind duckdb_value_decimal duckdb_decimal_t [result-ptr :ptr col idx_t row idx_t])
+(ffi/defbind duckdb_value_string duckdb_string [result-ptr :ptr col idx_t row idx_t])
+(ffi/defbind duckdb_value_string_internal duckdb_string_t [result-ptr :ptr col idx_t row idx_t])
+# Returned string must be freed with duckdb_free
+(ffi/defbind duckdb_value_to_string :string [value-ptr :ptr])
+(ffi/defbind duckdb_value_varchar_internal duckdb_string_t [result-ptr :ptr col idx_t row idx_t])
 
 # Streaming result functions
 (ffi/defbind duckdb_fetch_chunk :ptr [result duckdb_result])
 
 # Profiling functions
 (ffi/defbind duckdb_get_profiling_info :ptr [connection-ptr :ptr])
-(ffi/defbind duckdb_destroy_profiling_info :void [info-ptr-ptr :ptr])

@@ -106,9 +106,9 @@
                                                       :varchar
                                                       :varchar
                                                       :varchar
-                                                      :timestamp
-                                                      :timestamp
-                                                      :timestamp
+                                                      :timestamp_tz
+                                                      :timestamp_tz
+                                                      :timestamp_tz
                                                       :varchar
                                                       :varchar
                                                       :varchar
@@ -125,7 +125,7 @@
                                                       :bool
                                                       :bool
                                                       :bigint
-                                                      :varchar
+                                                      :sqlnull
                                                       :bool
                                                       :bool
                                                       :bigint
