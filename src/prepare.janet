@@ -251,7 +251,8 @@
           (def member-type-ptr (ffi/duckdb_union_type_member_type logical-type-ptr tag-idx))
           (defer (types/destroy-logical-type-ptr member-type-ptr)
             (def duckdb-val (janet-to-duckdb-value value member-type member-type-ptr))
-            (ffi/duckdb_create_union_value logical-type-ptr tag-idx duckdb-val)))
+            (defer (ffi/duckdb_destroy_value (ffi/write :ptr duckdb-val))
+              (ffi/duckdb_create_union_value logical-type-ptr tag-idx duckdb-val))))
 
         (error (string/format "unsupported complex type: %q" type-key))))))
 

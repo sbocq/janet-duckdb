@@ -109,6 +109,7 @@ Releases are compatible with the following versions of DuckDB:
 
 | Release Version | DuckDB Version   |
 |-----------------|------------------|
+| v0.7.x          | v2.0.x           |
 | v0.6.x          | v1.5.x           |
 | v0.5.x          | v1.5.x           |
 | v0.4.x          | v1.4.x           |
@@ -116,6 +117,17 @@ Releases are compatible with the following versions of DuckDB:
 | <= v0.2.x       | v1.3.1           |
 
 # Changelog
+
+## v0.7.0 2026-10-26
+
+- Upgrade to duckdb-v2.0.0 (Cinnamon Teal)
+- `db/open` reads config defaults from `JANET_DUCKDB_CONFIG_<OPTION>`
+  environment variables (suffix lowercased); explicit config takes precedence.
+  `make valgrind` uses this to pin DuckDB to a single thread
+- Fixed a 48-byte-per-bind leak when binding union-typed prepared-statement
+  parameters (present since v0.6.0)
+- Support the new SQLNULL logical type in type metadata (all-NULL columns
+  describe as `:sqlnull`)
 
 ## v0.6.0 2026-06-08
 
