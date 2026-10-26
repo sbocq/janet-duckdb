@@ -109,3 +109,15 @@
     (with [conn (db/connect db)]
       (def rows (db/query-rows conn "SELECT 1 AS a" :keywordize false))
       (test rows @[{"a" 1}]))))
+
+(deftest "open reads config defaults from JANET_DUCKDB_CONFIG_ env vars"
+  (os/setenv "JANET_DUCKDB_CONFIG_THREADS" "4")
+  (defer (os/setenv "JANET_DUCKDB_CONFIG_THREADS" nil)
+    (with [db (db/open ":memory:")]
+      (with [conn (db/connect db)]
+        (def row (db/query-first conn "SELECT current_setting('threads') AS threads"))
+        (test (row :threads) 4)))
+    (with [db (db/open ":memory:" {"threads" "2"})]
+      (with [conn (db/connect db)]
+        (def row (db/query-first conn "SELECT current_setting('threads') AS threads"))
+        (test (row :threads) 2)))))

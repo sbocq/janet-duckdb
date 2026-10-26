@@ -51,11 +51,23 @@
 
 (defn open "Open a DuckDB database. Accepts an optional `path` and `config` map, e.g.
   {:access_mode :READ_ONLY}. Defaults to \":memory:\" if path is not specified.
+  Config defaults may also come from environment variables named
+  JANET_DUCKDB_CONFIG_<OPTION> (suffix lowercased), e.g. JANET_DUCKDB_CONFIG_THREADS;
+  entries in `config-map` take precedence over environment defaults.
   Free with :close."
   [&opt path config-map]
 
   (default path ":memory:")
   (default config-map {})
+
+  (def env-config
+    (let [defaults @{}]
+      (eachp [k v] (os/environ)
+        (when (string/has-prefix? "JANET_DUCKDB_CONFIG_" k)
+          (def suffix (string/slice k (length "JANET_DUCKDB_CONFIG_")))
+          (unless (empty? suffix)
+            (put defaults (string/ascii-lower suffix) v))))
+      defaults))
 
   (def config-ptr-ptr (ffi/write :ptr (ffi/write ffi/duckdb_config [nil])))
   (when (= (ffi/duckdb_create_config config-ptr-ptr) ffi/DuckDBError)
@@ -64,7 +76,7 @@
   (def database-ptr-ptr (ffi/write :ptr (ffi/write ffi/duckdb_database [nil])))
   (defer (ffi/duckdb_destroy_config config-ptr-ptr)
     (def config-ptr (ffi/read :ptr config-ptr-ptr))
-    (eachp [k v] config-map
+    (eachp [k v] (merge env-config config-map)
       (when (= (ffi/duckdb_set_config config-ptr (string k) (string v)) ffi/DuckDBError)
         (error (string/format "cannot set option %q=%q" k v))))
 
